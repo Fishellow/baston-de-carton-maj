@@ -206,3 +206,5 @@ input{background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius
 /* numéro de version / bouton de mise à jour sous le menu */
 #ver{color:var(--paper);font-size:12px;opacity:.85;min-height:18px;display:flex;align-items:center}
 #ver .btn{opacity:1}
+
+/* mise a jour en ligne : premier test reel */
