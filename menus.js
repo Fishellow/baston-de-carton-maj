@@ -219,7 +219,13 @@ function goNet(me,seed,mine,their,them,big){
   const o=me==='p'?'e':'p',ti=TITLES.includes(them.title)?them.title:'';
   $('#hud').classList.add('hide');
   newGame({mode:'net',me,seed,big:!!big,decks:{[me]:mine,[o]:their},names:{[me]:S.d.name,[o]:esc(them.name)},faces:{[me]:S.d.avatar,[o]:AVATARS.includes(them.avatar)?them.avatar:'poulet'},titles:{[me]:S.d.use.title,[o]:ti},looks:{[me]:myLook(),[o]:cleanLook(them)}})}
-const netErr=e=>lobbyMsg(e&&e.type==='peer-unavailable'?'Code introuvable. Vérifie avec ton pote.':e&&e.type==='unavailable-id'?'Ce code est déjà pris, réessaie.':'Connexion impossible. Vérifie ton internet, puis réessaie.'+(e&&e.type?' ('+e.type+')':''));
+/* diagnostic : le jeu arrive-t-il à joindre le serveur qui met les joueurs en relation ? (affiché dans le message d'erreur) */
+async function netProbe(){let a='?';try{const r=await fetch('https://0.peerjs.com/peerjs/id?ts='+Date.now());a=r.ok?'OK':'refus '+r.status}catch(e){a='bloqué'}
+  const b=await new Promise(res=>{try{const w=new WebSocket('wss://0.peerjs.com/peerjs?key=peerjs&id=test'+Date.now()+'&token=t&version=1.5.4'),t=setTimeout(()=>{res('pas de réponse');try{w.close()}catch(e){}},6000);
+    w.onopen=()=>{clearTimeout(t);res('OK');w.close()};w.onerror=()=>{clearTimeout(t);res('bloquée')}}catch(e){res('bloquée')}});
+  return 'serveur : '+a+' · liaison : '+b}
+const netText=e=>e&&e.type==='peer-unavailable'?'Code introuvable. Vérifie avec ton pote.':e&&e.type==='unavailable-id'?'Ce code est déjà pris, réessaie.':'Connexion impossible'+(e&&e.type?' ('+e.type+')':'')+'.';
+const netErr=e=>{const t=netText(e);lobbyMsg(t);if(!e||(e.type!=='peer-unavailable'&&e.type!=='unavailable-id'))netProbe().then(p=>lobbyMsg(t+' Test : '+p+'. Envoie ce message à celui qui a fait le jeu.'))};
 const rnd4=()=>Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.random()*24|0]).join('');
 const errText=e=>e&&e.type==='peer-unavailable'?'Code introuvable. Vérifie avec ton pote.':e&&e.type==='unavailable-id'?'Ce code est déjà pris, réessaie.':'Connexion impossible. Vérifie ton internet.';
 const myCard=()=>({name:S.d.name,avatar:S.d.avatar,title:S.d.use.title,fc:S.d.fcode,body:S.d.use.body,hat:S.d.use.hat});
@@ -315,7 +321,7 @@ $('#l2friends').addEventListener('click',e=>{const b=e.target.closest('[data-inv
 
 /* ---------- amis ---------- */
 function drawFriends(){$('#fcode').textContent=S.d.fcode;
-  if(!$('#frmsg').dataset.keep)$('#frmsg').textContent=FR.dup?'Le jeu est déjà ouvert dans une autre fenêtre : les amis ne marchent que dans une seule.':FR.ready?'':'Connexion…';
+  if(!$('#frmsg').dataset.keep)$('#frmsg').textContent=FR.dup?'Le jeu est déjà ouvert dans une autre fenêtre : les amis ne marchent que dans une seule.':FR.ready?'':'Connexion aux amis…'+(window.__frp?' '+window.__frp:'');
   const rows=S.d.friends.map(f=>({f,w:f.w|0})).concat([{me:1,w:S.d.wins|0}]).sort((x,y)=>y.w-x.w);
   $('#flist').innerHTML=rows.map((r,i)=>{const rk='<span class="frk">'+(i+1)+'</span>';
     if(r.me)return `<div class="fr on me">${rk}<span class="face">${faceHTML(S.d.avatar)}</span><div class="frn"><b>${esc(S.d.name)} (toi)</b><small>Niveau ${S.d.lvl} · ${S.d.wins} victoire${S.d.wins>1?'s':''} · ${S.d.losses} défaite${S.d.losses>1?'s':''}</small></div></div>`;
@@ -348,6 +354,8 @@ $('#invite').addEventListener('click',e=>{const b=e.target.closest('[data-ans]')
   closeInvite();$('#modes').classList.add('hide');
   if(v.mode==='2v2'){show('lobby2');join2(v.room)}else if(v.mode==='tour'){show('tour');tourJoin(v.room)}else{show('lobby');joinDuel(v.room)}});
 FR.start();drawFrTag();
+/* si au bout de 15 s la liste d'amis n'est toujours pas connectée, on affiche pourquoi */
+setTimeout(()=>{if(!FR.ready)netProbe().then(p=>{window.__frp='Test : '+p+(FR.lastErr?' · '+FR.lastErr:'');if(CUR==='friends')drawFriends()})},15000);
 
 /* ---------- mise à jour automatique (seulement dans le jeu installé : window.BDC vient de preload.js) ---------- */
 function updReady(v){const el=$('#ver');el.textContent='';const b=document.createElement('button');b.className='btn sm green';b.textContent='Mise à jour prête : relancer le jeu';b.addEventListener('click',()=>BDC.relaunch());el.appendChild(b);toast('Mise à jour '+v+' téléchargée.')}

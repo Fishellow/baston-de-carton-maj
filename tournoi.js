@@ -9,7 +9,7 @@ function tourReset() { if (TOUR.H) { clearTimeout(TOUR.H.t1); clearTimeout(TOUR.
 const rPrice = id => Math.max(1, C[id].c), rVal = u => rPrice(u.id) * [1, 3, 9][u.star - 1];
 const rUnits = a => [0, 1, 2, 3].map(i => { const u = a && a[i]; return u && C[u.id] && C[u.id].k === 'c' ? { id: u.id, star: Math.max(1, Math.min(3, u.star | 0)) } : null; });
 const rPower = a => a.reduce((t, u) => t + (u ? (C[u.id].a + C[u.id].h) * STARM[u.star] : 0), 0);
-const rShop = round => { const max = Math.min(6, 2 + Math.ceil(round / 2)), pool = IDS.filter(id => C[id].k === 'c' && C[id].c <= max); return [0, 1, 2, 3].map(() => pool[Math.random() * pool.length | 0]); };
+const rShop = round => { const max = Math.min(6, 2 + Math.ceil(round / 2)), pool = IDS.filter(id => C[id].k === 'c' && !C[id].custom && C[id].c <= max); return [0, 1, 2, 3, 4].map(() => pool[Math.random() * pool.length | 0]); };
 const rIncome = (round, won) => 4 + Math.min(round, 5) + (won ? 1 : 0);
 /* 3 identiques (même étoile) → 1 avec une étoile de plus */
 function rMerge(st) { for (let again = true; again;) { again = false; const all = []; for (const z of ['board', 'bench']) st[z].forEach((u, i) => u && all.push({ u, z, i }));
@@ -17,68 +17,91 @@ function rMerge(st) { for (let again = true; again;) { again = false; const all 
     const keep = same.find(y => y.z === 'board') || same[0]; same.filter(y => y !== keep).sort((p, q) => (p.z === 'bench' ? 0 : 1) - (q.z === 'bench' ? 0 : 1)).slice(0, 2).forEach(y => st[y.z][y.i] = null); keep.u.star++; again = true; break; } } }
 function rAdd(st, id) { let z = 'bench', i = st.bench.indexOf(null); if (i < 0) { z = 'board'; i = st.board.indexOf(null); } if (i < 0) return false; st[z][i] = { id, star: 1 }; rMerge(st); return true; }
 
-/* ---------- affichage ---------- */
+/* ---------- affichage ----------
+   Avant le lancement : l'écran « tournoi » (code, joueurs inscrits, invitations).
+   Pendant le tournoi : tout se passe sur la table 3D (#app). Mes créatures y sont posées en hologrammes ;
+   le banc et la boutique sont en bas, la liste des joueurs à gauche, les pièces et le chrono à droite. */
 function drawTour() {
-  $('#tstart').classList.toggle('hide', !!TOUR.code); $('#troom').classList.toggle('hide', !TOUR.code || TOUR.started); $('#roy').classList.toggle('hide', !TOUR.started);
-  if (!TOUR.code) return;
-  if (!TOUR.started) {
+  const lobby = !!TOUR.code && !TOUR.started;
+  $('#tstart').classList.toggle('hide', !!TOUR.code); $('#troom').classList.toggle('hide', !lobby); $('#tend').classList.toggle('hide', !TOUR.started);
+  if (lobby) {
     $('#tcode').textContent = TOUR.code;
     $('#tlist').innerHTML = TOUR.players.map((x, i) => `<div class="rp ${i === TOUR.you ? 'me' : ''}"><span class="face">${faceHTML(x.avatar)}</span><b>${x.name}</b></div>`).join('');
     $('#tacts').classList.toggle('hide', !TOUR.host);
     const on = S.d.friends.filter(f => FR.online(f.code));
     $('#tfriends').innerHTML = !TOUR.host ? '<p class="small">C\'est le créateur du tournoi qui invite et qui lance.</p>' : on.map(f => `<div class="fr on"><span class="face">${faceHTML(f.avatar)}</span><div class="frn"><b>${f.name}</b></div><button class="btn sm yellow" data-invt="${f.code}">Inviter</button></div>`).join('') || '<p class="small">Aucun ami en ligne pour l\'instant. Tu peux aussi donner le code.</p>';
-    return;
   }
-  const me = TOUR.players[TOUR.you] || {}, prep = TOUR.phase === 'prep' && me.alive;
-  $('#rplayers').innerHTML = TOUR.players.map((x, i) => ({ x, i })).sort((a, b) => b.x.hp - a.x.hp).map(({ x, i }) => `<div class="rp ${i === TOUR.you ? 'me' : ''} ${x.alive ? '' : 'dead'} ${x.ready && TOUR.phase === 'prep' ? 'ok' : ''}"><span class="face">${faceHTML(x.avatar)}</span><b>${x.name}</b><em>${Math.max(0, x.hp)}</em></div>`).join('');
-  $('#rround').textContent = TOUR.phase === 'end' ? 'Tournoi terminé' : 'Manche ' + TOUR.round;
-  $('#rgold').innerHTML = COIN + TOUR.gold;
-  const slot = (z, i, u) => `<div class="rslot ${TOUR.sel && TOUR.sel.z === z && TOUR.sel.i === i ? 'sel' : ''}" data-z="${z}" data-i="${i}">${u ? cardHTML(u.id, { shownAtk: Math.round(C[u.id].a * STARM[u.star]), hp: Math.max(1, Math.round(C[u.id].h * STARM[u.star])), max: 999 }) + '<div class="stars">' + '★'.repeat(u.star) + '</div>' : ''}</div>`;
-  $('#rboard').innerHTML = TOUR.board.map((u, i) => slot('board', i, u)).join(''); $('#rbench').innerHTML = TOUR.bench.map((u, i) => slot('bench', i, u)).join('');
-  $('#rshop').innerHTML = prep ? TOUR.shop.map((id, i) => id ? `<div class="rslot ${rPrice(id) > TOUR.gold ? 'no' : ''}" data-buy="${i}">${cardHTML(id)}<div class="cost">${rPrice(id)} pièce${rPrice(id) > 1 ? 's' : ''}</div></div>` : '<div class="rslot"></div>').join('') : '';
-  $('#rReroll').disabled = !prep || TOUR.gold < 1; $('#rReady').disabled = !prep || TOUR.ready; $('#rReady').textContent = TOUR.ready ? 'En attente des autres…' : 'Prêt';
-  $('#rSell').disabled = !prep || !TOUR.sel; if (TOUR.sel && TOUR[TOUR.sel.z][TOUR.sel.i]) $('#rSell').textContent = 'Vendre · +' + rVal(TOUR[TOUR.sel.z][TOUR.sel.i]); else $('#rSell').textContent = 'Vendre';
-  const ch = TOUR.champ != null && TOUR.players[TOUR.champ];
-  tMsg(TOUR.phase === 'end' ? (ch ? ch.name + ' gagne le tournoi !' : 'Tournoi terminé.') : !me.alive ? 'Tu es éliminé. Tu peux regarder la suite.' : TOUR.phase === 'fight' ? 'Combats en cours…' : 'Achète, clique une créature puis une case pour la déplacer. 3 identiques = une étoile de plus.');
+  if (TOUR.started) { const ch = TOUR.champ != null && TOUR.players[TOUR.champ];
+    $('#tend').innerHTML = '<div class="label">' + (TOUR.phase === 'end' ? 'Classement final' : 'Tu es éliminé · le tournoi continue') + '</div>' + rList();
+    tMsg(TOUR.phase === 'end' ? (ch ? ch.name + ' gagne le tournoi !' : 'Tournoi terminé.') : 'Tu peux rester pour voir qui gagne.'); }
 }
-setInterval(() => { if (!TOUR.started || CUR !== 'tour') return; const s = Math.max(0, Math.ceil((TOUR.until - Date.now()) / 1000)); $('#rtimer').textContent = TOUR.phase === 'prep' ? s + ' s' : ''; }, 500);
+const rList = () => TOUR.players.map((x, i) => ({ x, i })).sort((a, b) => b.x.hp - a.x.hp).map(({ x, i }) => `<div class="rp ${i === TOUR.you ? 'me' : ''} ${x.alive ? '' : 'dead'} ${x.ready && TOUR.phase === 'prep' ? 'ok' : ''}"><span class="face">${faceHTML(x.avatar)}</span><b>${x.name}</b><em>${Math.max(0, x.hp)}</em></div>`).join('');
+const rShown = u => u && { shownAtk: Math.round(C[u.id].a * STARM[u.star]), hp: Math.max(1, Math.round(C[u.id].h * STARM[u.star])), max: 999 };
+/* les panneaux posés sur la table */
+function royUI() {
+  if (!TOUR.started || !G || !G.auto) return; const prep = !!G.prep && TOUR.phase === 'prep';
+  $('#rplayers').innerHTML = rList();
+  $('#rinfo').innerHTML = '<b>Manche ' + TOUR.round + '</b><b id="rtimer"></b><span>' + COIN + TOUR.gold + '</span>';
+  const n = {}; TOUR.board.forEach(u => { if (u) n[C[u.id].t] = (n[C[u.id].t] || 0) + 1; });
+  const teams = Object.keys(n).filter(t => n[t] >= 2).map(t => (T[t] ? T[t].n : 'Potes') + ' ×' + n[t] + ' : +' + (n[t] >= 4 ? 2 : 1) + ' attaque');
+  $('#rsyn').innerHTML = prep ? (teams.length ? teams.join('<br>') : 'Astuce : 2 créatures du même terrain = +1 attaque. Posée sur son terrain : +1 aussi.') : (G.over ? 'En attente des autres combats…' : 'Combat !');
+  const sel = TOUR.sel;
+  $('#rbench').innerHTML = TOUR.bench.map((u, i) => `<div class="rslot ${sel && sel.z === 'bench' && sel.i === i ? 'sel' : ''}" data-z="bench" data-i="${i}">${u ? cardHTML(u.id, rShown(u)) + '<div class="stars">' + '★'.repeat(u.star) + '</div>' : ''}</div>`).join('');
+  $('#rshop').innerHTML = TOUR.shop.map((id, i) => id ? `<div class="rslot ${rPrice(id) > TOUR.gold ? 'no' : ''}" data-buy="${i}">${cardHTML(id)}<div class="cost">${rPrice(id)}</div></div>` : '<div class="rslot"></div>').join('');
+  const su = sel && TOUR[sel.z][sel.i];
+  $('#rReroll').disabled = !prep || TOUR.gold < 1; $('#rSell').disabled = !prep || !su; $('#rSell').textContent = su ? 'Vendre ' + C[su.id].n + ' · +' + rVal(su) : 'Vendre';
+  $('#rReady').disabled = !prep || TOUR.ready; $('#rReady').textContent = TOUR.ready ? 'En attente des autres…' : 'Prêt';
+}
+setInterval(() => { const el = $('#rtimer'); if (el) el.textContent = TOUR.started && TOUR.phase === 'prep' ? Math.max(0, Math.ceil((TOUR.until - Date.now()) / 1000)) + ' s' : ''; }, 500);
 function tourPay() {
   if (TOUR.champ == null || TOUR.paid || !TOUR.on) return; TOUR.paid = true;
   if (TOUR.champ === TOUR.you) { const g = 50 * Math.max(1, Math.min(8, TOUR.n | 0)); S.d.coins += g; if (!S.d.own.title.includes('Champion du tournoi')) S.d.own.title.push('Champion du tournoi'); toast('Tu gagnes le tournoi ! +' + g + ' pièces et le titre « Champion du tournoi ».'); SND.play('win'); }
   else { S.d.coins += 30; toast('+30 pièces pour ta participation.'); }
-  S.save(); drawHud();
+  S.save();
 }
 
 /* ---------- côté joueur ---------- */
 function rSendBoard() { const u = rUnits(TOUR.board); if (TOUR.host) TOUR.H.players[TOUR.you].board = u; else NET.send({ t: 'rboard', units: u }); }
+/* mes créatures sur la table (u.o = l'hologramme déjà posé, gardé tant que la créature ne change pas) */
+function royBoard() { if (!G || !G.prep) return; G[ME].lanes = TOUR.board.map(u => u ? (u.o && u.o.star === u.star ? u.o : (u.o = mkUnit(u.id, u.star))) : null); render(); royUI(); rSendBoard(); }
+/* préparation d'une manche : la table avec mon équipe, personne en face */
+function royPrep() {
+  for (const u of TOUR.board.concat(TOUR.bench)) if (u) delete u.o;
+  $('#hud').classList.add('hide'); $('#end').classList.add('hide');
+  newGame({ mode: 'auto', prep: true, me: 'p', seed: 7 + TOUR.round, big: false, auto: { p: [], e: [] }, decks: { p: [], e: [] }, names: { p: S.d.name, e: '…' }, faces: { p: S.d.avatar, e: 'fantome' }, titles: { p: '', e: '' }, looks: { p: myLook(), e: { body: 'noir', hat: 'aucun' } } });
+  royBoard();
+}
 function rState(m) {
   const id = v => Number.isInteger(v) && v >= 0 && v < 8 ? v : null, newRound = m.phase === 'prep' && (m.round | 0) !== TOUR.round;
   TOUR.started = !!m.started; TOUR.you = id(m.you) || 0; TOUR.n = m.n | 0; TOUR.champ = id(m.champ); TOUR.phase = String(m.phase || ''); TOUR.round = m.round | 0;
   TOUR.players = (Array.isArray(m.players) ? m.players : []).slice(0, 8).map(x => ({ name: esc(x && x.name), avatar: x && AVATARS.includes(x.avatar) ? x.avatar : 'poulet', hp: x ? x.hp | 0 : 0, alive: !!(x && x.alive), ready: !!(x && x.ready), look: cleanLook(x) }));
-  if (newRound) { TOUR.gold += TOUR.round === 1 ? 5 : rIncome(TOUR.round, TOUR.lastWin); TOUR.shop = rShop(TOUR.round); TOUR.ready = false; TOUR.sel = null; TOUR.until = Date.now() + (m.secs | 0) * 1000; rSendBoard(); SND.play('turn'); }
-  if (CUR === 'tour') drawTour(); tourPay();
+  const me = TOUR.players[TOUR.you] || {}, inApp = !$('#app').classList.contains('hide');
+  if (TOUR.phase === 'end' || !me.alive) { tourPay(); if (inApp || CUR !== 'tour') { $('#app').classList.remove('auto', 'royprep'); show('tour'); } else drawTour(); return; }
+  if (newRound) { TOUR.gold += TOUR.round === 1 ? 5 : rIncome(TOUR.round, TOUR.lastWin); TOUR.shop = rShop(TOUR.round); TOUR.ready = false; TOUR.sel = null; TOUR.until = Date.now() + (m.secs | 0) * 1000; SND.play('turn'); royPrep(); }
+  royUI();
 }
 function rFight(m) {
-  const me = m.side === 'e' ? 'e' : 'p', o = me === 'p' ? 'e' : 'p', opp = TOUR.players[m.opp | 0]; if (!opp) return; TOUR.fightRound = m.round | 0;
+  const me = m.side === 'e' ? 'e' : 'p', o = me === 'p' ? 'e' : 'p', opp = TOUR.players[m.opp | 0]; if (!opp) return; TOUR.fightRound = m.round | 0; TOUR.sel = null;
   $('#hud').classList.add('hide');
   newGame({ mode: 'auto', me, seed: m.seed | 0, big: false, first: m.first === 'e' ? 'e' : 'p', auto: { [me]: rUnits(TOUR.board), [o]: rUnits(m.units) }, decks: { p: [], e: [] },
     names: { [me]: S.d.name, [o]: opp.name + (m.ghost ? ' (fantôme)' : '') }, faces: { [me]: S.d.avatar, [o]: opp.avatar }, titles: { p: '', e: '' }, looks: { [me]: myLook(), [o]: opp.look } });
+  royUI();
 }
 TOUR.fightDone = function (won, left) {
   TOUR.lastWin = won; const dmg = 2 + Math.floor(TOUR.round / 2) + (left | 0), r = TOUR.fightRound;
   if (TOUR.host) hReport(TOUR.you, r, won, dmg); else NET.send({ t: 'rres', round: r, win: !!won, dmg });
-  show('tour');
+  royUI();
 };
-$('#roy').addEventListener('click', e => {
-  const me = TOUR.players[TOUR.you]; if (!me || !me.alive || TOUR.phase !== 'prep') return; let el;
-  if (el = e.target.closest('[data-buy]')) { const i = +el.dataset.buy, id = TOUR.shop[i]; if (!id) return; if (rPrice(id) > TOUR.gold) return toast('Pas assez de pièces.'); if (!rAdd(TOUR, id)) return toast('Plus de place : vends une créature.'); TOUR.gold -= rPrice(id); TOUR.shop[i] = null; SND.play('card'); }
-  else if (e.target.closest('#rReroll')) { if (TOUR.gold < 1) return; TOUR.gold--; TOUR.shop = rShop(TOUR.round); SND.play('click'); }
-  else if (e.target.closest('#rSell')) { const s = TOUR.sel, u = s && TOUR[s.z][s.i]; if (!u) return; TOUR.gold += rVal(u); TOUR[s.z][s.i] = null; TOUR.sel = null; SND.play('click'); }
-  else if (e.target.closest('#rReady')) { TOUR.ready = true; if (TOUR.host) hReady(TOUR.you); else NET.send({ t: 'rready' }); }
-  else if (el = e.target.closest('[data-z]')) { const z = el.dataset.z, i = +el.dataset.i, s = TOUR.sel;
-    if (!s) { if (TOUR[z][i]) TOUR.sel = { z, i }; } else { const a = TOUR[s.z][s.i]; TOUR[s.z][s.i] = TOUR[z][i]; TOUR[z][i] = a; TOUR.sel = null; SND.play('click'); } }
-  else return;
-  rSendBoard(); drawTour();
+/* un clic sur une case : rien de choisi → je prends la créature ; sinon je la pose là (échange si la case est prise) */
+function rMove(z, i) { const s = TOUR.sel; if (!s) { if (TOUR[z][i]) TOUR.sel = { z, i }; } else { const a = TOUR[s.z][s.i]; TOUR[s.z][s.i] = TOUR[z][i]; TOUR[z][i] = a; TOUR.sel = null; SND.play('click'); } royBoard(); }
+TOUR.pick = l => { if (G && G.prep && TOUR.phase === 'prep' && l < 4) rMove('board', l); };
+$('#app').addEventListener('click', e => {
+  if (!TOUR.started || !G || !G.prep || TOUR.phase !== 'prep') return; let el;
+  if (el = e.target.closest('[data-buy]')) { const i = +el.dataset.buy, id = TOUR.shop[i]; if (!id) return; if (rPrice(id) > TOUR.gold) return toast('Pas assez de pièces.'); if (!rAdd(TOUR, id)) return toast('Plus de place : vends une créature.'); TOUR.gold -= rPrice(id); TOUR.shop[i] = null; SND.play('card'); return royBoard(); }
+  if (e.target.closest('#rReroll')) { if (TOUR.gold < 1) return; TOUR.gold--; TOUR.shop = rShop(TOUR.round); SND.play('click'); return royUI(); }
+  if (e.target.closest('#rSell')) { const s = TOUR.sel, u = s && TOUR[s.z][s.i]; if (!u) return; TOUR.gold += rVal(u); TOUR[s.z][s.i] = null; TOUR.sel = null; SND.play('click'); return royBoard(); }
+  if (e.target.closest('#rReady')) { TOUR.ready = true; if (TOUR.host) hReady(TOUR.you); else NET.send({ t: 'rready' }); return royUI(); }
+  if (el = e.target.closest('#rbench [data-z]')) rMove('bench', +el.dataset.i);
 });
 
 /* ---------- côté hôte ---------- */
@@ -140,3 +163,4 @@ $('#btHost').addEventListener('click', () => tourHost());
 $('#btJoin').addEventListener('click', () => { const code = $('#jtcode').value.toUpperCase().replace(/[^A-Z]/g, ''); if (code.length !== 4) return tMsg('Le code fait 4 lettres.'); tourJoin(code); });
 $('#btGo').addEventListener('click', tourGo);
 $('#tfriends').addEventListener('click', e => { const b = e.target.closest('[data-invt]'); if (!b || !TOUR.code) return; const f = FR.friend(b.dataset.invt); if (f && FR.invite(f.code, 'tour', TOUR.code)) { b.disabled = true; b.textContent = 'Invité'; toast('Invitation envoyée à ' + f.name + '.'); } });
+$('#rQuit').addEventListener('click', () => { NET.stop(); location.reload(); });

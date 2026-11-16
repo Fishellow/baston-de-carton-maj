@@ -425,3 +425,18 @@ input{background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius
 #mkArt button{width:46px;height:46px;border:3px solid var(--ink);border-radius:10px;background:#fff;padding:0;cursor:pointer}#mkArt button.on{background:var(--yellow)}#mkArt img{width:100%;height:100%;object-fit:contain}
 #mkList{display:flex;flex-direction:column;gap:6px}.mkit{display:flex;align-items:center;gap:10px;font-weight:700}.mkit b{flex:1;font-family:"Lilita One";font-weight:400}
 .mkadd{display:flex;gap:8px}.mkadd input{flex:1}
+
+/* tournoi refait : tout se passe sur la table */
+#rpanel,#rside,#rbar{display:none}
+#app.auto #rpanel{display:flex;flex-direction:column;gap:6px;position:absolute;left:12px;top:96px;width:214px;padding:10px;zoom:var(--hz,1);z-index:6}
+#app.auto #log{display:none}
+#app.auto #rside{display:flex;flex-direction:column;gap:9px;position:absolute;right:12px;top:12px;width:236px;padding:14px;zoom:var(--hz,1);z-index:6;align-items:stretch}
+#rinfo{display:flex;justify-content:space-between;align-items:center;font-family:"Lilita One";font-size:20px;color:var(--ink)}#rinfo span{display:flex;align-items:center;gap:5px}
+#rtimer{color:var(--red)}#rsyn{font-size:12.5px;font-weight:700;line-height:1.35;min-height:34px}
+#app.auto:not(.royprep) #rReroll,#app.auto:not(.royprep) #rSell,#app.auto:not(.royprep) #rReady{display:none}
+#app.royprep #rbar{display:flex;gap:26px;position:absolute;left:50%;bottom:6px;transform:translateX(-50%);zoom:var(--hz,1);z-index:6;align-items:flex-end}
+#app.royprep .hero.top,#app.royprep #loupe,#app.auto .sidebtns{display:none}
+#rbar .rslots{zoom:.62}#rbar .label{margin-bottom:10px}
+#rbar .rslot{background:#fff6e0cc}
+#tend{padding:18px 24px;display:flex;flex-direction:column;gap:8px;min-width:340px}#tend.hide{display:none}
+#app.auto #side{display:none}

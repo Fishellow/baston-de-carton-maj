@@ -4,7 +4,7 @@
    Deux tables : classique (4 couloirs, 20 PV) et Grande Baston (6 couloirs, 30 PV, un quartier général par joueur). NL = nombre de couloirs (cards.js).
    Tour : événement de table (tous les 3 tours) → choix « 2 cartes » ou « 1 carte + 1 énergie » → cartes, pouvoir de héros, rage → baston.
    Tout ce qui est tiré au hasard dans les règles passe par G.R (le même tirage chez les deux joueurs en ligne). */
-const $=s=>document.querySelector(s), sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const $=s=>document.querySelector(s), sleep=ms=>new Promise(r=>setTimeout(r,typeof G!=='undefined'&&G&&G.auto&&!G.prep?ms*.55:ms));
 const opp=s=>s==='p'?'e':'p';
 let G=null,ME='p',MYSEAT=0,MYG=0,AIRUN=true,MODE='solo',Q=Promise.resolve(),LOCK=false,MGBUSY=false;
 /* est-ce à moi (et pas à mon coéquipier) de jouer ? */
@@ -89,7 +89,7 @@ async function tableEvent(){const e=EVENTS[G.R()*EVENTS.length|0];log('Événeme
 
 /* ---------- affichage ---------- */
 const slot=(s,l)=>({getBoundingClientRect:()=>V.rect(s,l)});
-function okFor(s,l){if(!G||G.busy||G.over||!myTurn()||G.phase!=='main'||G.sel==null)return false;const sel=C[G[ME].hand[G.sel]],c=G[s].lanes[l],b=G[s].bld[l];
+function okFor(s,l){if(G&&G.prep)return s===ME&&typeof TOUR!=='undefined'&&!!TOUR.sel;if(!G||G.busy||G.over||!myTurn()||G.phase!=='main'||G.sel==null)return false;const sel=C[G[ME].hand[G.sel]],c=G[s].lanes[l],b=G[s].bld[l];
   return sel.k==='c'?s===ME&&!(c&&c.fused):sel.k==='b'?s===ME&&!(b&&C[b.id].qg):sel.tgt==='enemy'?s!==ME&&!!c:sel.tgt==='ally'?s===ME&&!!c:sel.tgt==='ebld'?s!==ME&&!!b:false}
 const terrHTML=t=>`<div class="tinfo panel"><b>${T[t].n}</b><span>Une créature du même terrain posée ici gagne +1 attaque.</span></div>`;
 function render(){
@@ -138,7 +138,7 @@ function newGame(o){
   /* les sièges : 1 par côté en duel, 2 en 2 contre 2. g = numéro du joueur à la table (0 à 3), ai = joué par le robot */
   const defs=o.seats||{p:[{deck:o.decks.p,name:o.names.p,face:o.faces.p,title:o.titles&&o.titles.p,look:o.looks&&o.looks.p,g:0}],e:[{deck:o.decks.e,name:o.names.e,face:o.faces.e,title:o.titles&&o.titles.e,look:o.looks&&o.looks.e,g:1,ai:o.mode==='solo'}]};
   MYG=defs[ME][MYSEAT].g|0;
-  const terrs=()=>{const t=shuffle(['fromage','sauce','slip','nuage'],R);return NL>4?shuffle(t.concat(shuffle(['fromage','sauce','slip','nuage'],R).slice(0,NL-4)),R):t};
+  const terrs=()=>{if(o.auto)return['fromage','sauce','slip','nuage'];const t=shuffle(['fromage','sauce','slip','nuage'],R);return NL>4?shuffle(t.concat(shuffle(['fromage','sauce','slip','nuage'],R).slice(0,NL-4)),R):t};
   const mk=(ds,hp)=>{const P={hp,maxHp:hp,rage:0,cur:0,started:false,lanes:Array(NL).fill(null),bld:Array(NL).fill(null),terr:terrs(),
       seats:ds.map(d=>({name:d.name,face:d.face,look:d.look||null,title:d.title||'',ai:!!d.ai,g:d.g|0,energy:0,maxE:1,powUsed:false,deck:shuffle(d.deck.slice(),R),hand:[]}))};
     for(const k of['energy','maxE','powUsed','deck','hand'])Object.defineProperty(P,k,{get(){return this.seats[this.cur][k]},set(v){this.seats[this.cur][k]=v}});return P};
@@ -147,17 +147,20 @@ function newGame(o){
   /* Grande Baston : chacun a son quartier général au milieu */
   if(o.big)for(const P of[p,e])P.bld[NL>>1]=mkBld('qg');
   for(const P of[p,e])for(const st of P.seats)for(let i=0;i<4&&st.deck.length;i++)st.hand.push(st.deck.pop());
-  G.auto=!!o.auto;G.defi=!!o.defi;$('#app').classList.toggle('auto',G.auto);
+  G.auto=!!o.auto;G.defi=!!o.defi;G.prep=!!o.prep;$('#app').classList.toggle('royprep',G.prep);$('#app').classList.toggle('auto',G.auto);
   if(o.auto)for(const s of['p','e'])(o.auto[s]||[]).slice(0,NL).forEach((u,l)=>{if(u&&C[u.id]&&C[u.id].k==='c')G[s].lanes[l]=mkUnit(u.id,u.star)});
+  /* tournoi, bonus d'équipe : 2 créatures du même terrain = +1 attaque chacune, 4 = +2 */
+  if(o.auto)for(const s of['p','e']){const n={};G[s].lanes.forEach(c=>{if(c)n[C[c.id].t]=(n[C[c.id].t]||0)+1});G[s].lanes.forEach(c=>{if(c)c.atk+=n[C[c.id].t]>=4?2:n[C[c.id].t]>=2?1:0})}
   $('#heroes').innerHTML=`<div class="hero panel top" id="hero-${O}"></div><div class="hero panel bot" id="hero-${ME}"></div>`;
   $('#log').innerHTML='';$('#fx').innerHTML='';$('#bubbles').innerHTML='';$('#emoList').classList.add('hide');$('#loupe').innerHTML='';
   document.querySelectorAll('.scr').forEach(x=>x.classList.add('hide'));$('#app').classList.remove('hide');fit();
   SND.music('duel');
   V.start(ME,{p:p.terr,e:e.terr},G.faces[O],NL,G[O].seats[0].look);
-  V.onPick=(s,l)=>{if(okFor(s,l)&&!LOCK)tryPlay(G.sel,l)};
+  V.onPick=(s,l)=>{if(G.prep){if(s===ME&&typeof TOUR!=='undefined')TOUR.pick(l);return}if(okFor(s,l)&&!LOCK)tryPlay(G.sel,l)};
   V.onHover=h=>{if(!h)return;const c=G[h.s].lanes[h.l],b=G[h.s].bld[h.l];$('#loupe').innerHTML=c?cardHTML(c.id,c,false):b?cardHTML(b.id,{bhp:b.hp},false):terrHTML(G[h.s].terr[h.l])};
   render();
   /* un mini-jeu tiré au hasard décide qui commence ; l'autre pioche une carte en plus (les actions du pote attendent derrière) */
+  if(o.prep){G.phase='prep';G.busy=false;render();return}
   if(o.auto){Q=sleep(1600).then(()=>autoFight(o.first==='e'?'e':'p'));return}
   /* en 2 contre 2, pas de mini-jeu : l'équipe qui commence est tirée au sort (même tirage chez tout le monde) */
   Q=sleep(1800).then(()=>G.two?(G.R()<.5?'p':'e'):MG.run({mode:MODE,me:ME,seed:o.seed,names:{p:G.names.p,e:G.names.e},faces:{p:G.faces.p,e:G.faces.e}})).then(async first=>{

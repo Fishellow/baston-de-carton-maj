@@ -22,7 +22,7 @@ const FR = {
     p.on('connection', c => { if (this.peer === p) this.wire(c); });
     p.on('disconnected', () => { if (this.peer !== p) return; this.ready = false; this.onChange(); setTimeout(() => { if (this.peer !== p || p.destroyed) return; try { p.reconnect(); } catch (e) { this.again(); } }, 3000); });
     /* « peer-unavailable » = cet ami n'est pas en ligne : rien à faire. Le reste : on repart de zéro. */
-    p.on('error', e => { if (this.peer !== p || !e || e.type === 'peer-unavailable') return; if (e.type === 'unavailable-id' || e.type === 'network' || e.type === 'server-error' || e.type === 'socket-error' || e.type === 'socket-closed') this.again(e.type === 'unavailable-id'); });
+    p.on('error', e => { if (this.peer !== p || !e || e.type === 'peer-unavailable') return; this.lastErr = e.type; if (e.type === 'unavailable-id' || e.type === 'network' || e.type === 'server-error' || e.type === 'socket-error' || e.type === 'socket-closed') this.again(e.type === 'unavailable-id'); });
   },
   again(taken) {
     const p = this.peer; this.peer = null; this.ready = false; this.tries++; this.dup = !!taken && this.tries >= 6; for (const k in this.links) delete this.links[k];

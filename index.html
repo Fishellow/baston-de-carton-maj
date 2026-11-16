@@ -155,15 +155,7 @@
       <div class="l2acts" id="tacts"><button class="btn red" id="btGo">Lancer le tournoi</button></div></div>
     <div class="panel l2side"><div class="label">Inviter un ami</div><div id="tfriends"></div></div>
   </div>
-  <div class="hide" id="roy">
-    <div class="panel rside"><div class="label">Joueurs</div><div id="rplayers"></div></div>
-    <div class="panel rmain">
-      <div class="rtop"><b id="rround"></b><b id="rtimer"></b><span id="rgold"></span></div>
-      <div class="rrow"><div><div class="label">Ton équipe</div><div class="rslots" id="rboard"></div></div><div><div class="label">Ton banc</div><div class="rslots" id="rbench"></div></div></div>
-      <div class="label">Boutique</div><div class="rslots" id="rshop"></div>
-      <div class="racts"><button class="btn sm" id="rReroll">Relancer la boutique · 1 pièce</button><button class="btn sm" id="rSell" disabled>Vendre</button><button class="btn green" id="rReady">Prêt</button></div>
-    </div>
-  </div>
+  <div class="panel hide" id="tend"></div>
   <p class="panel note" id="tmsg">Chaque manche : tu achètes des créatures, tu les places, et elles se battent toutes seules. 3 fois la même = une étoile de plus. Le dernier en vie gagne.</p>
 </div>
 
@@ -199,6 +191,10 @@
   </div>
   <div id="choice" class="hide"><div class="panel chbox"><div class="label">Début de ton tour</div><div class="chs"><button class="btn yellow" data-ch="cards">2 cartes<small>Pioche 2 cartes</small></button><button class="btn blue" data-ch="nrj">1 carte + 1 énergie<small>Pour jouer plus gros ce tour</small></button></div></div></div>
   <div id="mate"></div>
+  <!-- tournoi : joueurs à gauche, infos à droite, banc + boutique en bas -->
+  <div id="rpanel" class="panel"><div class="label">Joueurs</div><div id="rplayers"></div></div>
+  <div id="rside" class="panel"><div id="rinfo"></div><div id="rsyn"></div><button class="btn sm" id="rReroll">Nouvelle boutique · 1 pièce</button><button class="btn sm" id="rSell" disabled>Vendre</button><button class="btn green" id="rReady">Prêt</button><button class="btn sm" id="rQuit">Quitter le tournoi</button></div>
+  <div id="rbar"><div><div class="label">Banc</div><div class="rslots" id="rbench"></div></div><div><div class="label">Boutique</div><div class="rslots" id="rshop"></div></div></div>
   <div id="bubbles"></div>
   <div id="emo"><button class="btn sm" id="bEmo">Parler</button><div id="emoList" class="panel hide"></div></div>
   <div id="mg" class="hide"></div>
