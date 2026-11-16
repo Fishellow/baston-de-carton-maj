@@ -1,7 +1,6 @@
 /* Toutes les cartes du jeu. Rareté : C commune, R rare, E épique, L légendaire. */
-/* chaque terrain a un petit effet pour celui à qui il appartient (voir game.js) */
-const T={fromage:{n:'Plaine de Fromage',x:'Ta créature ici regagne 1 PV à la fin de ton tour.'},sauce:{n:'Volcan à Sauce',x:'La créature ennemie qui arrive en face prend 1 dégât.'},
-  slip:{n:'Marais du Slip',x:'Ta créature ici arrive avec +1 PV.'},nuage:{n:'Nuage Mou',x:'Si ta créature ici est mise K.O., tu pioches 1 carte.'},pote:{n:'Pote légendaire',x:''}};
+/* les 4 terrains : une créature posée sur son propre terrain gagne +1 attaque (pas d'autre effet) */
+const T={fromage:{n:'Plaine de Fromage'},sauce:{n:'Volcan à Sauce'},slip:{n:'Marais du Slip'},nuage:{n:'Nuage Mou'},pote:{n:'Pote légendaire'}};
 /* pouvoirs de héros : 1 fois par tour, 2 énergies. Ils dépendent de l'avatar. */
 const POWERS={draw:{n:'Bonne pioche',x:'Pioche 1 carte'},dmg:{n:'Coup de boule',x:'1 dégât au héros adverse'},heal:{n:'Petit goûter',x:'Soigne ton héros de 2'},shield:{n:'Couvercle',x:'Bouclier 1 à ta créature la plus forte'}};
 const POWER_OF={poulet:'draw',pigeon:'draw',ovni:'draw',licorne:'draw',dragon:'dmg',piment:'dmg',kebab:'dmg',ogre:'dmg',grenouille:'heal',canard:'heal',raclette:'heal',vache:'heal',baleine:'heal',souris:'shield',chaussette:'shield',fantome:'shield',mouton:'shield',roi:'shield'};
@@ -76,7 +75,18 @@ const C={
  castor:cr('Castor Bricoleur','slip','R',3,2,3,'','Arrivée : construit une Cabane en Carton sur son couloir.',{buildOn:'cabane'}),
  hibou:cr('Hibou Insomniaque','nuage','R',3,2,3,'',"Arrivée : pioche 1 carte et endort la créature d'en face.",{play:async(s,l)=>{await draw(s);stun(opp(s),l)}}),
  montgolfiere:cr('Montgolfière Trouillarde','nuage','E',4,2,6,'','Vol. Bouclier 1 : ignore le premier coup.',{vol:1,shield:1}),
+ /* --- 6e série : jouent avec la fusion, l'évolution, les bâtiments --- */
+ burrata:cr('Burrata Fragile','fromage','C',1,1,2,'','K.O. : soigne ton héros de 2.',{death:s=>healH(s,2)}),
+ tomme:cr('Tomme de Combat','fromage','R',4,3,5,'','Démolisseur : dégâts doublés contre les bâtiments.',{bldx2:1}),
+ nugget:cr('Nugget Kamikaze','sauce','C',2,3,1,'','K.O. : 1 dégât à toutes les créatures ennemies.',{death:s=>allFoes(s,1)}),
+ burger:cr('Burger Géant','sauce','E',5,4,6,'','Fusion : gagne +2 / +2 de plus quand il fusionne.',{fusionBonus:1}),
+ tetard:cr('Têtard Pressé','slip','C',1,1,1,'','Évolue dès son premier tour.',{fastEvo:1}),
+ herisson:cr('Hérisson Grognon','slip','R',3,1,4,'','Épines : la créature qui le tape prend 1 dégât.',{thorns:1}),
+ perroquet:cr('Perroquet Copieur','nuage','R',3,2,2,'',"Arrivée : copie l'attaque de la créature d'en face.",{play:(s,l)=>{const f=G[opp(s)].lanes[l],c=G[s].lanes[l];if(f&&c&&f.atk>c.atk){c.atk=f.atk;float(slot(s,l),'Copié !','g');render()}}}),
+ aigle:cr('Aigle Royal','nuage','E',5,4,4,'',"Vol. Arrivée : 3 dégâts au bâtiment d'en face.",{vol:1,play:(s,l)=>hurtB(opp(s),l,3)}),
  /* --- bâtiments --- */
+ mur:bd('Mur de Cartons','pote','C',1,'Aucun effet. Mais il encaisse.',{bh:7}),
+ infirmerie:bd('Infirmerie','slip','R',3,'Début de ton tour : soigne ton héros de 1.',{bh:4,startHeal:1}),
  cabane:bd('Cabane en Carton','pote','C',1,'Ta créature ici arrive avec Bouclier 1.',{bh:3,arriveShield:1}),
  fromagerie:bd('Fromagerie','fromage','C',2,'Ta créature ici a +1 attaque.',{bh:3,atk:1}),
  laverie:bd('Laverie du Marais','slip','C',2,'Fin de ton tour : soigne ta créature ici de 2.',{bh:3,endHeal:2}),
@@ -86,6 +96,9 @@ const C={
  phare:bd('Phare des Nuages','nuage','E',4,'Début de ton tour : pioche 1 carte de plus.',{bh:5,startDraw:1}),
  catapulte:bd('Catapulte à Cornichons','slip','E',4,"Fin de ton tour : 2 dégâts à la créature d'en face.",{bh:5,endHit:2}),
  qg:bd('Quartier Général','pote','L',0,"Grande Baston. S'il est détruit, tu perds 5 PV d'un coup.",{bh:8,qg:1,hidden:1}),
+ demolition:sp('Boule de Démolition','R',2,'',"Détruit un bâtiment ennemi (4 dégâts au quartier général).",'ebld',(s,l)=>{const b=G[opp(s)].bld[l];return b?hurtB(opp(s),l,C[b.id].qg?4:99):null}),
+ potion:sp("Potion d'Évolution",'E',3,'','Fait évoluer une de tes créatures tout de suite.','ally',(s,l)=>evolve(s,l)),
+ cri:sp('Cri de Guerre','R',2,'','Ta jauge de rage gagne 4.',null,s=>{G[s].rage=Math.min(RAGE_MAX,G[s].rage+4);float($('#hero-'+s),'Rage +4','r');render()}),
  chaises:sp('Chaises Musicales','E',3,'🪑','Renvoie une créature ennemie dans la main de son propriétaire.','enemy',(s,l)=>bounce(opp(s),l)),
 };
 for(const id of['claque','pizza','meteor'])C[id].mg=1;

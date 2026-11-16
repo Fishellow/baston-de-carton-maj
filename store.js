@@ -41,11 +41,17 @@ const S={d:null,
   deckOk(cards){if(cards.length!==20)return false;const n={};for(const id of cards){n[id]=(n[id]||0)+1;if(!C[id]||n[id]>Math.min(RAR[C[id].r].max,this.d.col[id]||0))return false}return true},
   /* ajoute une carte ; renvoie les pièces rendues si c'est un doublon en trop */
   add(id){const r=RAR[C[id].r];if((this.d.col[id]||0)>=r.max){this.d.coins+=r.dust;return r.dust}this.d.col[id]=(this.d.col[id]||0)+1;return 0},
-  /* le meilleur deck possible avec mes cartes : des sorts, 2 bâtiments, des créatures bien réparties en coût */
-  autoDeck(){const W={C:1,R:2,E:3.2,L:5},have=id=>Math.min(RAR[C[id].r].max,this.d.col[id]||0),score=id=>{const d=C[id];return W[d.r]+(d.k==='c'?(d.a+d.h)/Math.max(1,d.c)*.35:.6)};
-    const pool=k=>IDS.filter(id=>C[id].k===k&&have(id)).sort((a,b)=>score(b)-score(a)),out=[];
-    const n={},take=(ids,max)=>{for(const id of ids)while((n[id]||0)<have(id)&&out.length<max){out.push(id);n[id]=(n[id]||0)+1}};
-    take(pool('s'),5);take(pool('b').slice(0,2),7);const cr=pool('c');take(cr.filter(id=>C[id].c<=2),14);take(cr.filter(id=>C[id].c>2),20);take(cr,20);take(pool('s'),20);take(pool('b'),20);return out.slice(0,20)},
+  /* Fabrique un deck de 20 cartes avec ce que je possède.
+     o.keep = cartes à garder (le reste est complété), o.t = terrain à privilégier.
+     Répartition visée : 5 sorts, 2 bâtiments, le reste en créatures dont une bonne moitié pas chères. */
+  autoDeck(o){o=o||{};const W={C:1,R:2,E:3.2,L:5},have=id=>Math.min(RAR[C[id].r].max,this.d.col[id]||0);
+    const score=id=>{const d=C[id];return W[d.r]+(d.k==='c'?(d.a+d.h)/Math.max(1,d.c)*.35:.6)+(o.t&&d.t===o.t?3:0)};
+    const out=[],n={},add=id=>{if(out.length<20&&C[id]&&(n[id]||0)<have(id)){out.push(id);n[id]=(n[id]||0)+1;return true}return false};
+    for(const id of o.keep||[])add(id);
+    const pool=k=>IDS.filter(id=>C[id].k===k&&have(id)).sort((a,b)=>score(b)-score(a)),cnt=k=>out.filter(id=>C[id].k===k).length;
+    const fill=(ids,k,max)=>{for(const id of ids)while(cnt(k)<max&&add(id));};
+    fill(pool('s'),'s',5);fill(pool('b'),'b',2);
+    const cr=pool('c');fill(cr.filter(id=>C[id].c<=2),'c',Math.max(cnt('c'),7));fill(cr,'c',20);fill(pool('s'),'s',20);fill(pool('b'),'b',20);return out.slice(0,20)},
 };
 const PRICE={C:30,R:80,E:220,L:600};
 /* p = la carte dessinée sur le paquet */

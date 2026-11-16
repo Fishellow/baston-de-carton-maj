@@ -68,18 +68,28 @@
   <div class="panel sect"><div class="label">Paquets</div><div id="packs"></div></div>
 </div>
 
-<!-- collection -->
+<!-- decks : la collection à gauche, mon deck à droite -->
 <div class="scr hide" id="coll">
-  <div class="top"><button class="btn sm" data-go="menu"><span data-ic="back"></span> Menu</button><h2 class="big" id="collT"></h2><div id="filters"></div></div>
-  <div class="collwrap">
-    <div id="grid" class="panel"></div>
-    <div class="deckside">
-      <div id="peek"></div>
-      <div class="panel deckbox"><div id="tabs"></div><div class="big" id="dcount"></div>
-        <div class="dbtns"><button class="btn sm green" id="bAuto">Deck auto</button><button class="btn sm" id="bClear">Vider</button></div>
-        <div id="dlist"></div></div>
+  <div class="top"><button class="btn sm" data-go="menu"><span data-ic="back"></span> Menu</button><h2 class="big" id="collT">MES DECKS</h2><div id="tabs"></div></div>
+  <div class="dkwrap">
+    <div class="panel dkleft">
+      <div class="dkbar"><div id="filters"></div><div class="tog2" id="showAll"><button class="chip" data-all="0">Mes cartes</button><button class="chip" data-all="1">Toutes</button></div></div>
+      <div id="grid"></div>
+    </div>
+    <div class="panel dkright">
+      <div class="dkhead"><input id="dname" maxlength="14" spellcheck="false" title="Nom du deck"><div id="dcount"></div></div>
+      <div class="dkprog"><i id="dprog"></i></div>
+      <div id="dstatus"></div>
+      <div class="dkacts"><button class="btn green" id="bFill">Compléter</button><button class="btn sm" id="bClear">Vider</button></div>
+      <div class="dksub">Un deck tout fait en un clic</div>
+      <div id="themes"></div>
+      <div class="dksub">Énergie des cartes</div>
+      <div id="curve"></div>
+      <div id="dtypes"></div>
+      <div id="dlist"></div>
     </div>
   </div>
+  <div id="peek" class="hide"></div>
 </div>
 
 <!-- casier -->

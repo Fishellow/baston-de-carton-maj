@@ -111,35 +111,57 @@ async function openPack(p,got){
   $('#packOk').addEventListener('click',()=>{o.classList.add('hide');show('shop')},{once:true});
 }
 
-/* ---------- collection : filtres simples, clic = ajouter, bouton Deck auto ---------- */
+/* ---------- decks : clique une carte pour l'ajouter, « Compléter » remplit le reste, ou un deck tout fait en un clic ---------- */
 const sorted=ids=>ids.slice().sort((a,b)=>C[a].c-C[b].c||C[a].n.localeCompare(C[b].n));
-const FILTERS=[['mine','Mes cartes',id=>S.d.col[id]],['all','Toutes',()=>true],['fromage','Fromage',id=>C[id].t==='fromage'],['sauce','Sauce',id=>C[id].t==='sauce'],['slip','Slip',id=>C[id].t==='slip'],['nuage','Nuage',id=>C[id].t==='nuage'],['pote','Potes',id=>C[id].t==='pote'&&C[id].k==='c'],['spell','Sorts',id=>C[id].k==='s'],['build','Bâtiments',id=>C[id].k==='b']];
-let FIL='mine';
+const TCOL={fromage:'#ffd23f',sauce:'#e8443a',slip:'#58c48a',nuage:'#7fd4ff',pote:'#c77dff'};
+const FILTERS=[['all','Tout',()=>true],['fromage','Fromage',id=>C[id].t==='fromage'&&C[id].k==='c'],['sauce','Sauce',id=>C[id].t==='sauce'&&C[id].k==='c'],['slip','Slip',id=>C[id].t==='slip'&&C[id].k==='c'],['nuage','Nuage',id=>C[id].t==='nuage'&&C[id].k==='c'],['pote','Potes',id=>C[id].t==='pote'&&C[id].k==='c'],['spell','Sorts',id=>C[id].k==='s'],['build','Bâtiments',id=>C[id].k==='b']];
+const THEMES=[[null,'Équilibré','#fff6e0'],['fromage','Fromage',TCOL.fromage],['sauce','Sauce',TCOL.sauce],['slip','Slip',TCOL.slip],['nuage','Nuage',TCOL.nuage]];
+let FIL='all',SHOWALL=false;
 function drawColl(){
-  const D=S.d.decks[S.d.active],cnt={};D.cards.forEach(id=>cnt[id]=(cnt[id]||0)+1);
-  const own=IDS.filter(id=>S.d.col[id]).length,f=FILTERS.find(x=>x[0]===FIL)[2];
-  $('#collT').textContent=`COLLECTION ${own} / ${IDS.length}`;
-  $('#filters').innerHTML=FILTERS.map(x=>`<button class="chip ${x[0]===FIL?'on':''}" data-fil="${x[0]}">${x[1]}</button>`).join('');
-  $('#grid').innerHTML=sorted(IDS.filter(f)).map(id=>{const n=S.d.col[id]||0,inD=cnt[id]||0;
-    return `<div class="gc ${n?'':'locked'} ${n&&inD?'used':''}" data-add="${id}">${cardHTML(id)}<span class="cnt">${n?(inD?inD+' / ':'')+n:IC('lock')}</span></div>`}).join('')||'<p class="small">Aucune carte ici.</p>';
-  $('#tabs').innerHTML=S.d.decks.map((d,i)=>`<button class="tab ${i===S.d.active?'on':''}" data-tab="${i}">${d.name}</button>`).join('');
-  $('#dcount').textContent=D.cards.length+' / 20';$('#dcount').classList.toggle('bad',D.cards.length!==20);
-  $('#dlist').innerHTML=sorted([...new Set(D.cards)]).map(id=>`<div class="dr" data-rem="${id}" style="border-left-color:${RAR[C[id].r].col}"><span class="dc">${C[id].c}</span>${C[id].n}<b>${cnt[id]>1?'×'+cnt[id]:''}</b></div>`).join('')||'<p class="small">Clique des cartes à gauche, ou appuie sur « Deck auto ».</p>';
+  const d=S.d,D=d.decks[d.active],cnt={};D.cards.forEach(id=>cnt[id]=(cnt[id]||0)+1);
+  const own=IDS.filter(id=>d.col[id]).length,f=FILTERS.find(x=>x[0]===FIL)[2],n=D.cards.length;
+  $('#collT').textContent='MES DECKS';
+  $('#tabs').innerHTML=d.decks.map((k,i)=>`<button class="tab ${i===d.active?'on':''}" data-tab="${i}">${esc(k.name)}<i class="${k.cards.length===20?'ok':''}">${k.cards.length}</i></button>`).join('');
+  $('#filters').innerHTML=FILTERS.map(x=>`<button class="chip ${x[0]===FIL?'on':''}" data-fil="${x[0]}">${TCOL[x[0]]?'<b style="background:'+TCOL[x[0]]+'"></b>':''}${x[1]}</button>`).join('');
+  document.querySelectorAll('[data-all]').forEach(b=>b.classList.toggle('on',(b.dataset.all==='1')===SHOWALL));
+  const ids=sorted(IDS.filter(id=>f(id)&&(SHOWALL||d.col[id])));
+  $('#grid').innerHTML=ids.map(id=>{const have=d.col[id]||0,max=Math.min(have,RAR[C[id].r].max),inD=cnt[id]||0;
+    return `<div class="gc ${have?'':'locked'} ${inD?'used':''} ${have&&inD>=max?'full':''}" data-add="${id}">${cardHTML(id)}
+      ${have?`<div class="pips">${Array.from({length:max},(_,i)=>`<i class="${i<inD?'on':''}"></i>`).join('')}</div>`:`<div class="pips lk">${IC('lock')}</div>`}
+      ${inD?`<button class="minus" data-rem="${id}" title="Enlever du deck">−</button>`:''}</div>`}).join('')||`<p class="dkempty">Aucune carte ici. ${SHOWALL?'':'Regarde dans « Toutes » ou dans la Boutique.'}</p>`;
+  /* la colonne de droite : mon deck */
+  if(document.activeElement!==$('#dname'))$('#dname').value=D.name;
+  $('#dcount').innerHTML=`<b>${n}</b> / 20`;$('#dprog').style.width=n/20*100+'%';$('#dprog').classList.toggle('ok',n===20);
+  $('#dstatus').className=n===20?'ok':'';$('#dstatus').innerHTML=n===20?IC('check')+' Prêt à jouer':n?`Il manque ${20-n} carte${20-n>1?'s':''}`:'Deck vide';
+  $('#bFill').disabled=n===20;$('#bFill').textContent=n?'Compléter ('+(20-n)+')':'Remplir tout seul';
+  $('#themes').innerHTML=THEMES.map(t=>`<button class="chip" data-theme="${t[0]||''}"><b style="background:${t[2]}"></b>${t[1]}</button>`).join('');
+  const cv=[0,0,0,0,0,0];D.cards.forEach(id=>cv[Math.min(6,Math.max(1,C[id].c))-1]++);const mx=Math.max(1,...cv);
+  $('#curve').innerHTML=cv.map((v,i)=>`<div class="cb"><span>${v||''}</span><i style="height:${v/mx*100}%"></i><b>${i===5?'6+':i+1}</b></div>`).join('');
+  const ty=k=>D.cards.filter(id=>C[id].k===k).length;
+  $('#dtypes').textContent=`${ty('c')} créature${ty('c')>1?'s':''} · ${ty('s')} sort${ty('s')>1?'s':''} · ${ty('b')} bâtiment${ty('b')>1?'s':''}`;
+  $('#dlist').innerHTML=sorted([...new Set(D.cards)]).map(id=>{const p=window.PORT&&PORT[id];
+    return `<div class="dr" data-rem="${id}" data-peek="${id}" style="--rc:${TCOL[C[id].t]||(C[id].k==='s'?'#b388ff':'#e3c594')}"><span class="dc">${C[id].c}</span>${p?'<img src="'+p+'" alt="">':'<i class="noimg"></i>'}<em>${C[id].n}</em><b>${cnt[id]>1?'×'+cnt[id]:''}</b></div>`}).join('')||'<p class="dkempty">Clique des cartes à gauche,<br>ou appuie sur « Remplir tout seul ».</p>';
 }
-$('#coll').addEventListener('click',e=>{const D=S.d.decks[S.d.active];let el;
+$('#coll').addEventListener('click',e=>{const d=S.d,D=d.decks[d.active];let el;
   if(el=e.target.closest('[data-fil]')){FIL=el.dataset.fil;return drawColl()}
-  if(e.target.closest('#bAuto')){D.cards=S.autoDeck();toast('Deck rempli avec tes meilleures cartes.')}
+  if(el=e.target.closest('[data-all]')){SHOWALL=el.dataset.all==='1';return drawColl()}
+  if(el=e.target.closest('[data-tab]')){d.active=+el.dataset.tab}
+  else if(e.target.closest('#bFill')){D.cards=S.autoDeck({keep:D.cards});SND.play('quest');toast('Deck complété avec tes meilleures cartes.')}
   else if(e.target.closest('#bClear')){D.cards=[]}
-  else if(el=e.target.closest('[data-tab]')){S.d.active=+el.dataset.tab}
-  else if(el=e.target.closest('[data-rem]')){D.cards.splice(D.cards.indexOf(el.dataset.rem),1)}
-  else if(el=e.target.closest('[data-add]')){const id=el.dataset.add,n=S.d.col[id]||0,have=D.cards.filter(x=>x===id).length;
-    if(!n)return toast('Tu n\'as pas cette carte. Regarde dans la Boutique.');
-    if(D.cards.length>=20)return toast('Deck plein (20 cartes). Enlève-en une à droite.');
-    if(have>=Math.min(n,RAR[C[id].r].max))return toast('Tu as déjà mis tous tes exemplaires.');
-    D.cards.push(id);SND.play('card')}
+  else if(el=e.target.closest('[data-theme]')){D.cards=S.autoDeck({t:el.dataset.theme||null});SND.play('quest');toast('Deck '+el.textContent.trim()+' prêt.')}
+  else if(el=e.target.closest('[data-rem]')){const i=D.cards.indexOf(el.dataset.rem);if(i<0)return;D.cards.splice(i,1);SND.play('click')}
+  else if(el=e.target.closest('[data-add]')){const id=el.dataset.add,n=d.col[id]||0,have=D.cards.filter(x=>x===id).length;
+    if(!n)return toast('Tu n\'as pas encore cette carte. Regarde dans la Boutique.');
+    if(have>=Math.min(n,RAR[C[id].r].max)){const i=D.cards.indexOf(id);D.cards.splice(i,1);SND.play('click')}
+    else if(D.cards.length>=20)return toast('Deck plein (20 cartes). Enlève-en une d\'abord.');
+    else{D.cards.push(id);SND.play('card')}}
   else return;
   S.save();drawColl()});
-$('#coll').addEventListener('mouseover',e=>{const el=e.target.closest('.gc .card');if(el)$('#peek').innerHTML=cardHTML(el.dataset.id)});
+$('#coll').addEventListener('contextmenu',e=>{const el=e.target.closest('[data-add]');if(!el)return;e.preventDefault();const D=S.d.decks[S.d.active],i=D.cards.indexOf(el.dataset.add);if(i>=0){D.cards.splice(i,1);SND.play('click');S.save();drawColl()}});
+$('#dname').addEventListener('input',e=>{S.d.decks[S.d.active].name=esc(e.target.value)||'Deck';S.save();const t=$('#tabs .tab.on');if(t)t.firstChild.textContent=S.d.decks[S.d.active].name});
+/* aperçu en grand quand on survole une ligne du deck */
+$('#dlist').addEventListener('mouseover',e=>{const el=e.target.closest('[data-peek]');if(!el)return;const p=$('#peek');p.innerHTML=cardHTML(el.dataset.peek);p.classList.remove('hide');const r=el.getBoundingClientRect();p.style.top=Math.max(110,Math.min(innerHeight-300,r.top-110))+'px'});
+$('#dlist').addEventListener('mouseleave',()=>$('#peek').classList.add('hide'));
 
 /* ---------- casier : avatar, dos de carte, halo, table, titre + la route des niveaux ---------- */
 function drawLocker(){const d=S.d,hex=c=>'#'+c.toString(16).padStart(6,'0');

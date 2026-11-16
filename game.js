@@ -36,14 +36,14 @@ async function hurt(s,l,n,o){const c=G[s].lanes[l];if(!c||G.over)return;const d=
   await sleep(260);
   if(c.hp<=0){
     if(d.revive&&!c.revived){c.revived=true;c.hp=1;c.poison=0;float(slot(s,l),'Revient !','g');SND.play('spawn');log(d.n+' se relève',s)}
-    else{G[s].lanes[l]=null;log(d.n+' est K.O.',s,'ko');SND.play('death');ev(opp(s),'ko',1);render();if(d.death)await d.death(s,l);
-      /* terrain Nuage : une créature qui tombe ici fait piocher son propriétaire */
-      if(G[s].terr[l]==='nuage'&&!G.over){float(slot(s,l),'+1 carte','g');await draw(s)}}}
+    else{G[s].lanes[l]=null;log(d.n+' est K.O.',s,'ko');SND.play('death');ev(opp(s),'ko',1);render();if(d.death)await d.death(s,l)}}
   else if(d.rage){c.atk++;float(slot(s,l),'Rage +1','g')}
   render()}
 async function hurtH(s,n){if(G.over)return;G[s].hp-=n;G[s].rage=Math.min(RAGE_MAX,G[s].rage+n);float($('#hero-'+s),'-'+n,'r');SND.play('heroHit');ev(opp(s),'heroDmg',n);
   V.heroHit(s);render();await sleep(260);
   if(G[s].hp<=0)finish(opp(s))}
+/* évolution d'une créature : +2 / +2, une seule fois */
+async function evolve(s,l){const c=G[s].lanes[l];if(!c||c.evo)return;c.evo=true;c.atk+=2;c.hp+=2;c.max+=2;float(slot(s,l),'Évolution !','g');log(C[c.id].n+' évolue (+2 / +2)',s,'ko');SND.play('legend');render();await sleep(600)}
 /* un bâtiment encaisse ; détruit, le quartier général coûte 5 PV à son joueur */
 async function hurtB(s,l,n){const b=G[s].bld[l];if(!b||G.over)return;const d=C[b.id];b.hp-=n;float(slot(s,l),'-'+n,'r');SND.play('hit');V.hitB(s,l);await sleep(260);
   if(b.hp<=0){G[s].bld[l]=null;log(d.n+' est détruit',s,'ko');SND.play('death');render();if(d.qg){banner('QUARTIER GÉNÉRAL DÉTRUIT !');await sleep(500);await hurtH(s,5)}}
@@ -84,8 +84,8 @@ async function tableEvent(){const e=EVENTS[G.R()*EVENTS.length|0];log('Événeme
 /* ---------- affichage ---------- */
 const slot=(s,l)=>({getBoundingClientRect:()=>V.rect(s,l)});
 function okFor(s,l){if(!G||G.busy||G.over||G.active!==ME||G.phase!=='main'||G.sel==null)return false;const sel=C[G[ME].hand[G.sel]],c=G[s].lanes[l],b=G[s].bld[l];
-  return sel.k==='c'?s===ME&&!(c&&c.fused):sel.k==='b'?s===ME&&!(b&&C[b.id].qg):sel.tgt==='enemy'?s!==ME&&!!c:sel.tgt==='ally'?s===ME&&!!c:false}
-const terrHTML=t=>`<div class="tinfo panel"><b>${T[t].n}</b><span>${T[t].x}</span><i>Créature du même terrain : +1 attaque</i></div>`;
+  return sel.k==='c'?s===ME&&!(c&&c.fused):sel.k==='b'?s===ME&&!(b&&C[b.id].qg):sel.tgt==='enemy'?s!==ME&&!!c:sel.tgt==='ally'?s===ME&&!!c:sel.tgt==='ebld'?s!==ME&&!!b:false}
+const terrHTML=t=>`<div class="tinfo panel"><b>${T[t].n}</b><span>Une créature du même terrain posée ici gagne +1 attaque.</span></div>`;
 function render(){
   if(!G)return;
   for(const s of ['e','p'])for(let l=0;l<NL;l++)if(G[s].lanes[l])G[s].lanes[l].shownAtk=atkOf(s,l);
@@ -109,7 +109,7 @@ function render(){
   $('#choice').classList.toggle('hide',!(mine&&G.phase==='choice'));
   if(!G.over)$('#hint').textContent=!mine?(G.active&&G.active!==ME?G.names[opp(ME)]+' réfléchit…':'…'):G.phase==='choice'?'Début de tour : choisis ton bonus.':
     G.sel==null?'Choisis une carte, puis lance la baston.':
-    (()=>{const d=C[H.hand[G.sel]];return d.k==='c'?'Choisis un couloir. Sur une de tes créatures : fusion.':d.k==='b'?'Choisis un de tes couloirs pour construire':d.tgt==='enemy'?'Choisis une créature ennemie':d.tgt==='ally'?'Choisis une de tes créatures':'Reclique la carte pour lancer le sort'})();
+    (()=>{const d=C[H.hand[G.sel]];return d.k==='c'?'Choisis un couloir. Sur une de tes créatures : fusion.':d.k==='b'?'Choisis un de tes couloirs pour construire':d.tgt==='enemy'?'Choisis une créature ennemie':d.tgt==='ally'?'Choisis une de tes créatures':d.tgt==='ebld'?'Choisis un bâtiment ennemi':'Reclique la carte pour lancer le sort'})();
 }
 function float(el,txt,cls){if(!el)return;const r=el.getBoundingClientRect(),f=document.createElement('div');f.className='float '+(cls||'');f.textContent=txt;
   f.style.left=r.left+r.width/2+(Math.random()*30-15)+'px';f.style.top=r.top+r.height/2+'px';$('#fx').appendChild(f);setTimeout(()=>f.remove(),900)}
@@ -152,7 +152,7 @@ async function startTurn(s){
   if(G.turn>2&&G.turn%3===0)await tableEvent();
   if(G.over)return;
   /* bâtiments : effets de début de tour */
-  for(let l=0;l<NL;l++){const b=bld(s,l);if(!b)continue;if(b.startNrj){P.energy+=b.startNrj;float(slot(s,l),'+'+b.startNrj+' énergie','g')}if(b.startDraw){await draw(s,b.startDraw);float(slot(s,l),'+1 carte','g')}}
+  for(let l=0;l<NL;l++){const b=bld(s,l);if(!b)continue;if(b.startNrj){P.energy+=b.startNrj;float(slot(s,l),'+'+b.startNrj+' énergie','g')}if(b.startDraw){await draw(s,b.startDraw);float(slot(s,l),'+1 carte','g')}if(b.startHeal)healH(s,b.startHeal)}
   /* le poison ronge les créatures du joueur dont c'est le tour */
   for(let l=0;l<NL&&!G.over;l++){const c=G[s].lanes[l];if(c&&c.poison){SND.play('poison');await hurt(s,l,c.poison,{through:1})}}
   if(G.over)return;
@@ -168,8 +168,7 @@ async function playCard(s,i,l,q){
   if(d.k==='c'){
     const u=mkUnit(id),b=bld(s,l);
     /* fusion : posée sur une de mes créatures, la nouvelle garde son pouvoir et additionne les forces */
-    if(old){u.atk+=old.atk;u.hp+=old.hp;u.max+=old.max;u.shield+=old.shield;u.fused=true;log('Fusion : '+C[old.id].n+' + '+d.n,s,'ko')}
-    if(P.terr[l]==='slip'){u.hp++;u.max++}
+    if(old){u.atk+=old.atk;u.hp+=old.hp;u.max+=old.max;u.shield+=old.shield;u.fused=true;if(d.fusionBonus){u.atk+=2;u.hp+=2;u.max+=2}log('Fusion : '+C[old.id].n+' + '+d.n,s,'ko')}
     if(b&&b.arriveShield)u.shield+=b.arriveShield;
     P.lanes[l]=u;render();ev(s,'creature',1);ev(s,'t_'+d.t,1);
     SND.play('whoosh');setTimeout(()=>SND.play('slam'),340);setTimeout(()=>SND.play(d.r==='L'||old?'legend':'spawn'),430);
@@ -177,8 +176,6 @@ async function playCard(s,i,l,q){
     if(d.r==='L'){ev(s,'legend',1);if(!old)banner(d.n.toUpperCase());await V.focus(s,l,1.7)}
     else await sleep(950);
     if(duo(s,l)){float(slot(s,l),'Duo de potes !','g');SND.play('buff');render()}
-    /* terrain Volcan en face : la créature qui arrive se brûle */
-    if(G[o].terr[l]==='sauce'&&P.lanes[l]===u){float(slot(s,l),'Volcan','r');await hurt(s,l,1)}
     if(d.play&&P.lanes[l]===u)await d.play(s,l);
     /* Bricoleur : construit un bâtiment sur son couloir s'il est libre */
     if(d.buildOn&&!P.bld[l]){P.bld[l]=mkBld(d.buildOn);log(C[d.buildOn].n+' est construite',s);render();SND.play('slam');await sleep(700)}
@@ -189,7 +186,7 @@ async function playCard(s,i,l,q){
     P.bld[l]=mkBld(id);ev(s,'build',1);render();SND.play('slam');setTimeout(()=>SND.play('buff'),300);banner(d.n.toUpperCase());await sleep(1000);
   }else{const qq=d.mg?(q===0||q===1||q===2?q:1):1;banner(d.n.toUpperCase()+(d.mg?[' : RATÉ',' !',' : PARFAIT !'][qq]:' !'));SND.play('spell');render();ev(s,'spell',1);
     const foes=LANES().filter(i=>G[o].lanes[i]).map(i=>V.spot(o,i));
-    const spots=d.tgt==='enemy'?[V.spot(o,l)]:d.tgt==='ally'?[V.spot(s,l)]:(id==='pluie'||id==='prout')?(foes.length?foes:[V.center()]):id==='pizza'?[V.heroSpot(o)]:[V.heroSpot(s)];
+    const spots=d.tgt==='enemy'||d.tgt==='ebld'?[V.spot(o,l)]:d.tgt==='ally'?[V.spot(s,l)]:(id==='pluie'||id==='prout')?(foes.length?foes:[V.center()]):id==='pizza'?[V.heroSpot(o)]:[V.heroSpot(s)];
     await sleep(350);await V.spell(id,spots,id==='meteor'||qq===2);await d.cast(s,l,qq)}
   await sleep(200);if(!G.over){G.busy=false;render()}
 }
@@ -204,17 +201,18 @@ async function endTurn(s){
       SND.play('whoosh');await V.attack(s,l,d.vol||!t);
       if(d.vol||(!t&&!tb))await hurtH(o,a);
       else if(t){const before=t.hp,sh=t.shield;await hurt(o,l,a);
+        /* Épines : celui qui tape se pique */
+        if(C[t.id].thorns&&!G.over&&G[s].lanes[l]===c){float(slot(s,l),'Épines','r');await hurt(s,l,C[t.id].thorns)}
         if(d.poison&&!sh&&G[o].lanes[l]===t)poisonC(o,l,d.poison);
         if(d.perce&&!sh&&a>before)await hurtH(o,a-before)}
       /* pas de créature en face mais un bâtiment : c'est lui qui prend */
-      else await hurtB(o,l,a);
+      else await hurtB(o,l,a*(d.bldx2?2:1));
       if(d.vamp&&!G.over)healH(s,1);
       await sleep(330);
     }
   }
   if(G.over)return;
   await each(s,async(c,l)=>{const d=C[c.id];if(d.regen)healC(s,l,d.regen);if(d.gym){c.atk++;float(slot(s,l),'+1 attaque','g')}
-    if(G[s].terr[l]==='fromage')healC(s,l,1);
     if(d.aura&&G[o].lanes[l]){float(slot(s,l),'Orage','');await hurt(o,l,d.aura)}});
   /* bâtiments : effets de fin de tour */
   for(let l=0;l<NL&&!G.over;l++){const b=bld(s,l);if(!b)continue;const c=G[s].lanes[l];
@@ -224,7 +222,7 @@ async function endTurn(s){
     if(b.endHero){float(slot(s,l),'Frites !','');await hurtH(o,b.endHero)}}
   if(G.over)return;
   /* évolution : une créature qui a tenu 3 de ses tours devient plus forte */
-  await each(s,async(c,l)=>{c.turns++;if(c.turns>=3&&!c.evo){c.evo=true;c.atk+=2;c.hp+=2;c.max+=2;float(slot(s,l),'Évolution !','g');log(C[c.id].n+' évolue (+2 / +2)',s,'ko');SND.play('legend');render();await sleep(600)}});
+  await each(s,async(c,l)=>{c.turns++;if(c.turns>=(C[c.id].fastEvo?1:3)&&!c.evo)await evolve(s,l)});
   render();await sleep(450);await startTurn(o);
 }
 function finish(w,why){if(G.over)return;G.over=true;G.busy=true;render();if(typeof MG!=='undefined')MG.cancel();
@@ -263,7 +261,7 @@ function aiPick(){
   for(const i of idx){const id=P.hand[i],d=C[id];let t;
     if(d.k==='c'){let best=-99,bl=-1;
       for(let l=0;l<NL;l++){const cur=P.lanes[l],f=F.lanes[l];let sc=cur?(cur.fused?-99:full?5:1):10;
-        if(d.t===P.terr[l])sc+=3;if(P.bld[l])sc+=2;if(F.terr[l]==='sauce'&&d.h<=1)sc-=6;if(f){sc+=d.a>=f.hp?3:1;if(d.vol)sc-=2;if(d.shield||d.poison)sc+=1}else sc+=2;
+        if(d.t===P.terr[l])sc+=3;if(P.bld[l])sc+=2;if(f){sc+=d.a>=f.hp?3:1;if(d.vol)sc-=2;if(d.shield||d.poison)sc+=1}else sc+=2;
         sc+=Math.random();if(sc>best){best=sc;bl=l}}
       if(best>0)return[i,bl]}
     else if(d.k==='b'){let best=-1,bl=-1;for(let l=0;l<NL;l++){if(P.bld[l])continue;const sc=(P.lanes[l]?3:1)+Math.random();if(sc>best){best=sc;bl=l}}if(bl>=0)return[i,bl]}
@@ -278,6 +276,9 @@ function aiPick(){
       case 'gouter':if(mine.length)return[i,byAtk(mine)[0].l];break;
       case 'cafe':if(P.hand.length<=6)return[i,0];break;
       case 'pizza':return[i,0];
+      case 'cri':if(P.rage<=6)return[i,0];break;
+      case 'potion':t=byAtk(mine.filter(m=>!m.c.evo))[0];if(t)return[i,t.l];break;
+      case 'demolition':{const bl=F.bld.findIndex(b=>b&&!C[b.id].qg),q=F.bld.findIndex(b=>b&&C[b.id].qg);if(bl>=0)return[i,bl];if(q>=0)return[i,q];break}
     }
   }
   return null}
