@@ -50,6 +50,7 @@
       <button class="btn mode yellow" data-mode="big"><span data-ic="grid6"></span>Grande Baston<small>6 couloirs, 30 points de vie. Plus de place pour les bâtiments.</small></button>
       <button class="btn mode" data-mode="story"><span data-ic="flag"></span>Histoire<small id="storyTag">8 chapitres, des boss et des récompenses.</small></button>
     </div>
+    <div class="bets"><span>Pari sur ta victoire :</span><button class="chip on" data-bet="0">Aucun</button><button class="chip" data-bet="20">20 pièces</button><button class="chip" data-bet="50">50 pièces</button><button class="chip" data-bet="100">100 pièces</button><span class="small">doublé si tu gagnes, perdu sinon (pas en Histoire)</span></div>
     <button class="btn sm" id="bModesX">Retour</button>
   </div>
 </div>
@@ -106,10 +107,12 @@
   <div id="side">
     <div id="loupe"></div>
     <div id="hint" class="box"></div>
+    <div class="pbtns"><button id="pow" class="btn sm"></button><button id="rage" class="btn sm red hide">RAGE ! 2 dégâts partout, +1 attaque aux tiens</button></div>
     <button id="go">Baston !</button>
     <div id="log" class="box"></div>
     <div class="sidebtns"><button class="btn sm" id="bSet2" title="Réglages" data-ic="gear"></button><button class="btn sm" id="quit">Abandonner</button></div>
   </div>
+  <div id="choice" class="hide"><div class="panel chbox"><div class="label">Début de ton tour</div><div class="chs"><button class="btn yellow" data-ch="cards">2 cartes<small>Pioche 2 cartes</small></button><button class="btn blue" data-ch="nrj">1 carte + 1 énergie<small>Pour jouer plus gros ce tour</small></button></div></div></div>
   <div id="mg" class="hide"></div>
 </div>
 

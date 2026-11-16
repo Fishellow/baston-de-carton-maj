@@ -1,5 +1,11 @@
 /* Toutes les cartes du jeu. Rareté : C commune, R rare, E épique, L légendaire. */
-const T={fromage:{n:'Plaine de Fromage',e:'🧀'},sauce:{n:'Volcan à Sauce',e:'🌋'},slip:{n:'Marais du Slip',e:'🩲'},nuage:{n:'Nuage Mou',e:'☁️'},pote:{n:'Pote légendaire',e:'⭐'}};
+/* chaque terrain a un petit effet pour celui à qui il appartient (voir game.js) */
+const T={fromage:{n:'Plaine de Fromage',x:'Ta créature ici regagne 1 PV à la fin de ton tour.'},sauce:{n:'Volcan à Sauce',x:'La créature ennemie qui arrive en face prend 1 dégât.'},
+  slip:{n:'Marais du Slip',x:'Ta créature ici arrive avec +1 PV.'},nuage:{n:'Nuage Mou',x:'Si ta créature ici est mise K.O., tu pioches 1 carte.'},pote:{n:'Pote légendaire',x:''}};
+/* pouvoirs de héros : 1 fois par tour, 2 énergies. Ils dépendent de l'avatar. */
+const POWERS={draw:{n:'Bonne pioche',x:'Pioche 1 carte'},dmg:{n:'Coup de boule',x:'1 dégât au héros adverse'},heal:{n:'Petit goûter',x:'Soigne ton héros de 2'},shield:{n:'Couvercle',x:'Bouclier 1 à ta créature la plus forte'}};
+const POWER_OF={poulet:'draw',pigeon:'draw',ovni:'draw',licorne:'draw',dragon:'dmg',piment:'dmg',kebab:'dmg',ogre:'dmg',grenouille:'heal',canard:'heal',raclette:'heal',vache:'heal',baleine:'heal',souris:'shield',chaussette:'shield',fantome:'shield',mouton:'shield',roi:'shield'};
+const powerOf=f=>POWER_OF[f]||({fromage:'heal',sauce:'dmg',slip:'shield',nuage:'draw'})[(C[f]||{}).t]||'draw';
 const RAR={C:{n:'Commune',col:'#9aa0a6',max:2,dust:5},R:{n:'Rare',col:'#3a86ff',max:2,dust:15},E:{n:'Épique',col:'#b5179e',max:2,dust:40},L:{n:'Légendaire',col:'#ffb703',max:1,dust:120}};
 const cr=(n,t,r,c,a,h,e,x,o={})=>({n,t,r,c,a,h,e,x,k:'c',...o});
 const po=(n,img,c,a,h,x,o={})=>({n,t:'pote',r:'L',c,a,h,img:'img/p_'+img+'.jpg',x,k:'c',...o});
@@ -51,14 +57,14 @@ const C={
  tortue:cr('Tortue Blindée','slip','R',3,1,6,'🐢|🛡️','Bouclier 2 : ignore les deux premiers coups.',{shield:2}),
  cigogne:cr('Cigogne Livreuse','nuage','R',3,2,3,'🦩|📦','Arrivée : livre un Pigeon Stagiaire dans un couloir voisin libre.',{summon:'pigeon'}),
  orage:cr('Nuage Grognon','nuage','E',5,3,5,'🌩️|😠',"Fin de ton tour : 1 dégât à la créature d'en face.",{aura:1}),
- claque:sp('Claque Cosmique','C',1,'🖐️','2 dégâts à une créature ennemie.','enemy',(s,l)=>hurt(opp(s),l,2)),
+ claque:sp('Claque Cosmique','C',1,'🖐️','Mini-jeu : 1 à 3 dégâts à une créature ennemie.','enemy',(s,l,q=1)=>hurt(opp(s),l,1+q)),
  cafe:sp('Café Serré','C',1,'☕','Pioche 2 cartes.',null,s=>draw(s,2)),
- pizza:sp('Pizza Ananas','C',1,'🍍','3 dégâts au héros ennemi. Il le mérite.',null,s=>hurtH(opp(s),3)),
+ pizza:sp('Pizza Ananas','C',1,'🍍','Mini-jeu : 2 à 5 dégâts au héros ennemi. Il le mérite.',null,(s,l,q=1)=>hurtH(opp(s),[2,3,5][q])),
  gouter:sp('Goûter de Mamie','C',2,'🍪','+2/+2 à une de tes créatures.','ally',(s,l)=>buff(s,l,2,2)),
  sieste:sp('Sieste Obligatoire','R',2,'😴','Une créature ennemie rate sa prochaine attaque.','enemy',(s,l)=>stun(opp(s),l)),
  prout:sp('Prout Tactique','R',2,'💨','1 dégât à toutes les créatures ennemies. Pioche 1 carte.',null,async s=>{await allFoes(s,1);await draw(s)}),
  pluie:sp('Pluie de Cornichons','E',3,'🥒','2 dégâts à toutes les créatures ennemies.',null,s=>allFoes(s,2)),
- meteor:sp('Météorite de Poche','E',4,'☄️','5 dégâts à une créature ennemie.','enemy',(s,l)=>hurt(opp(s),l,5)),
+ meteor:sp('Météorite de Poche','E',4,'☄️','Mini-jeu : 4 à 7 dégâts à une créature ennemie.','enemy',(s,l,q=1)=>hurt(opp(s),l,[4,5,7][q])),
  couvercle:sp('Couvercle de Poubelle','C',1,'🗑️','Donne Bouclier 2 à une de tes créatures.','ally',(s,l)=>shieldC(s,l,2)),
  chaussale:sp('Chaussette Sale','R',2,'🦠','Empoisonne une créature ennemie : -2 PV à chaque tour.','enemy',(s,l)=>poisonC(opp(s),l,2)),
  /* --- 5e série --- */
@@ -71,25 +77,29 @@ const C={
  hibou:cr('Hibou Insomniaque','nuage','R',3,2,3,'',"Arrivée : pioche 1 carte et endort la créature d'en face.",{play:async(s,l)=>{await draw(s);stun(opp(s),l)}}),
  montgolfiere:cr('Montgolfière Trouillarde','nuage','E',4,2,6,'','Vol. Bouclier 1 : ignore le premier coup.',{vol:1,shield:1}),
  /* --- bâtiments --- */
- cabane:bd('Cabane en Carton','pote','C',1,'Ta créature ici arrive avec Bouclier 1.',{arriveShield:1}),
- fromagerie:bd('Fromagerie','fromage','C',2,'Ta créature ici a +1 attaque.',{atk:1}),
- laverie:bd('Laverie du Marais','slip','C',2,'Fin de ton tour : soigne ta créature ici de 2.',{endHeal:2}),
- friterie:bd('Baraque à Frites','sauce','R',3,'Fin de ton tour : 1 dégât au héros ennemi.',{endHero:1}),
- salle:bd('Salle de Sport','pote','R',3,'Fin de ton tour : ta créature ici gagne +1 attaque.',{endGym:1}),
- tirelire:bd('Tirelire Géante','pote','R',3,'Début de ton tour : +1 énergie pour ce tour.',{startNrj:1}),
- phare:bd('Phare des Nuages','nuage','E',4,'Début de ton tour : pioche 1 carte de plus.',{startDraw:1}),
- catapulte:bd('Catapulte à Cornichons','slip','E',4,"Fin de ton tour : 2 dégâts à la créature d'en face.",{endHit:2}),
+ cabane:bd('Cabane en Carton','pote','C',1,'Ta créature ici arrive avec Bouclier 1.',{bh:3,arriveShield:1}),
+ fromagerie:bd('Fromagerie','fromage','C',2,'Ta créature ici a +1 attaque.',{bh:3,atk:1}),
+ laverie:bd('Laverie du Marais','slip','C',2,'Fin de ton tour : soigne ta créature ici de 2.',{bh:3,endHeal:2}),
+ friterie:bd('Baraque à Frites','sauce','R',3,'Fin de ton tour : 1 dégât au héros ennemi.',{bh:4,endHero:1}),
+ salle:bd('Salle de Sport','pote','R',3,'Fin de ton tour : ta créature ici gagne +1 attaque.',{bh:4,endGym:1}),
+ tirelire:bd('Tirelire Géante','pote','R',3,'Début de ton tour : +1 énergie pour ce tour.',{bh:4,startNrj:1}),
+ phare:bd('Phare des Nuages','nuage','E',4,'Début de ton tour : pioche 1 carte de plus.',{bh:5,startDraw:1}),
+ catapulte:bd('Catapulte à Cornichons','slip','E',4,"Fin de ton tour : 2 dégâts à la créature d'en face.",{bh:5,endHit:2}),
+ qg:bd('Quartier Général','pote','L',0,"Grande Baston. S'il est détruit, tu perds 5 PV d'un coup.",{bh:8,qg:1,hidden:1}),
  chaises:sp('Chaises Musicales','E',3,'🪑','Renvoie une créature ennemie dans la main de son propriétaire.','enemy',(s,l)=>bounce(opp(s),l)),
 };
-const IDS=Object.keys(C);
+for(const id of['claque','pizza','meteor'])C[id].mg=1;
+/* IDS = les cartes qu'on peut avoir (le quartier général n'en fait pas partie) */
+const IDS=Object.keys(C).filter(id=>!C[id].hidden);
 const STARTER=['poulet','poulet','souris','souris','raclette','raclette','piment','piment','saucisse','saucisse','grenouille','grenouille','chaussette','chaussette','pigeon','pigeon','claque','claque','cafe','gouter'];
 function cardHTML(id,inst,mini,cls=''){const d=C[id];
   let art;const P=window.PORT&&PORT[id];if(P)art=`<img class="port" src="${P}" alt="">`;else if(d.img)art=`<img src="${d.img}" alt="">`;else art='';
   let st='';
+  if(d.k==='b')st=`<div class="st h">${inst&&inst.bhp!=null?inst.bhp:d.bh}</div>`;
   if(d.k==='c'){const a=inst?inst.shownAtk:d.a,h=inst?inst.hp:d.h;
     st=`<div class="st a ${inst&&a>d.a?'up':''}">${a}</div><div class="st h ${inst&&h<inst.max?'dn':inst&&h>d.h?'up':''}">${h}</div>`}
   const kind=d.k==='s'?'Sort':d.k==='b'?'Bâtiment':'';
   return `<div class="card r-${d.r} ${d.k==='s'?'spell':'t-'+d.t} ${d.k==='b'?'build':''} ${mini?'mini':''} ${d.r==='L'?'holo':''} ${cls}" data-id="${id}">
     <div class="gem">${d.c}</div><div class="nm">${d.n}</div><div class="art">${art}</div>
     <div class="rar" style="background:${RAR[d.r].col}"></div>
-    <div class="tx${d.x.length>75?' xlong':d.x.length>48?' long':''}">${kind?'<b class="kd">'+kind+'</b> ':''}${d.x}</div>${st}${inst&&inst.stun?'<div class="zz">'+IC('sleep')+'</div>':''}${inst&&inst.shield?'<div class="zz zl">'+IC('shield')+'</div>':''}${inst&&inst.poison?'<div class="zz zl2">'+IC('drop')+'</div>':''}</div>`}
+    <div class="tx${d.x.length>75?' xlong':d.x.length>48?' long':''}">${kind?'<b class="kd">'+kind+'</b> ':''}${d.x}</div>${st}${inst&&inst.stun?'<div class="zz">'+IC('sleep')+'</div>':''}${inst&&inst.shield?'<div class="zz zl">'+IC('shield')+'</div>':''}${inst&&inst.poison?'<div class="zz zl2">'+IC('drop')+'</div>':''}${inst&&inst.evo?'<div class="evo">Évolué</div>':''}${inst&&inst.fused?'<div class="evo fu">Fusion</div>':''}</div>`}

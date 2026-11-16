@@ -61,12 +61,16 @@ function myDeck(){if(S.deckOk(S.deck()))return S.deck().slice();toast('Ton deck 
 const OPPS=[{n:'Roi Chaussette',f:'chaussette',t:null,ti:'Roi du panier à linge'},{n:'Mamie Fondue',f:'fondue',t:'fromage',ti:'Reine du fromage'},{n:'Chef Piment',f:'piment',t:'sauce',ti:'Ça pique'},{n:'Capitaine Slip',f:'grenouille',t:'slip',ti:'Héros du marais'},{n:'Miss Nuage',f:'licorne',t:'nuage',ti:'La tête en l\'air'}];
 function oppDeck(t){if(!t)return randomDeck();const base=randomDeck(),mine=IDS.filter(id=>C[id].t===t&&C[id].r!=='L');
   return base.map((id,i)=>i%2?mine[Math.random()*mine.length|0]:id).filter((id,i,a)=>a.slice(0,i).filter(x=>x===id).length<RAR[C[id].r].max).concat(randomDeck()).slice(0,20)}
+/* le pari : une mise en pièces sur ta victoire (doublée si tu gagnes, perdue sinon) */
+let BET=0;
+function drawBet(){document.querySelectorAll('[data-bet]').forEach(b=>{const v=+b.dataset.bet;b.classList.toggle('on',v===BET);b.disabled=v>S.d.coins})}
+document.querySelector('.bets').addEventListener('click',e=>{const b=e.target.closest('[data-bet]');if(!b||b.disabled)return;BET=+b.dataset.bet;drawBet()});
 function startSolo(o){const d=myDeck();if(!d)return;$('#modes').classList.add('hide');$('#hud').classList.add('hide');
   newGame(Object.assign({mode:'solo',me:'p',seed:Math.random()*1e9|0,decks:{p:d,e:o.deck},names:{p:S.d.name,e:o.n},faces:{p:S.d.avatar,e:o.f},titles:{p:S.d.use.title,e:o.ti}},o.opt))}
-$('#bPlay').addEventListener('click',()=>{drawMenu();$('#modes').classList.remove('hide')});
+$('#bPlay').addEventListener('click',()=>{drawMenu();if(BET>S.d.coins)BET=0;drawBet();$('#modes').classList.remove('hide')});
 $('#bModesX').addEventListener('click',()=>$('#modes').classList.add('hide'));
 $('#modes').addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(!b)return;const m=b.dataset.mode;
-  if(m==='story')return show('story');const o=OPPS[Math.random()*OPPS.length|0];startSolo({n:o.n,f:o.f,ti:o.ti,deck:oppDeck(o.t),opt:{big:m==='big'}})});
+  if(m==='story')return show('story');const o=OPPS[Math.random()*OPPS.length|0];startSolo({n:o.n,f:o.f,ti:o.ti,deck:oppDeck(o.t),opt:{big:m==='big',bet:Math.min(BET,S.d.coins)}})});
 
 /* ---------- histoire ---------- */
 function drawStory(){const d=S.d;
@@ -158,7 +162,8 @@ let NETBIG=false;
 document.querySelector('.tog').addEventListener('click',e=>{const b=e.target.closest('[data-big]');if(!b)return;NETBIG=b.dataset.big==='1';document.querySelectorAll('.tog .chip').forEach(c=>c.classList.toggle('on',c===b))});
 const lobbyMsg=t=>$('#lmsg').textContent=t;
 const cleanDeck=d=>Array.isArray(d)&&d.length===20&&d.every(id=>typeof id==='string'&&C[id])?d:null;
-const cleanAct=a=>a&&(a.t==='end'||(a.t==='play'&&Number.isInteger(a.i)&&a.i>=0&&a.i<8&&Number.isInteger(a.l)&&a.l>=0&&a.l<6))?{t:a.t,i:a.i,l:a.l}:null;
+const cleanAct=a=>!a?null:a.t==='end'||a.t==='power'||a.t==='rage'?{t:a.t}:a.t==='choice'?{t:'choice',v:a.v==='nrj'?'nrj':'cards'}:
+  a.t==='play'&&Number.isInteger(a.i)&&a.i>=0&&a.i<8&&Number.isInteger(a.l)&&a.l>=0&&a.l<6?{t:'play',i:a.i,l:a.l,q:a.q===0||a.q===2?a.q:1}:null;
 function goNet(me,seed,mine,their,them,big){
   NET.onData=d=>{if(d&&d.t==='mg')return MG.remote(d);const a=cleanAct(d);if(a)remote(a)};
   NET.onClose=()=>{if(G&&!G.over)finish(ME,'Ton pote a quitté la partie. Victoire par abandon.')};

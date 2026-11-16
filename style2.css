@@ -208,3 +208,21 @@ input{background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius
 #ver .btn{opacity:1}
 
 /* mise a jour en ligne : premier test reel */
+
+/* ---------- nouvelles mécaniques ---------- */
+.rage{width:120px;height:8px;border-radius:5px;border:2px solid var(--ink);background:#fff;overflow:hidden;margin-top:3px}
+.rage i{display:block;height:100%;background:var(--red);transition:width .3s}.rage.full{box-shadow:0 0 0 2px var(--yellow)}.rage.full i{animation:ragep .5s infinite alternate}
+@keyframes ragep{to{background:var(--yellow)}}
+.pbtns{display:flex;flex-direction:column;gap:8px;width:100%}
+.pbtns .btn{width:100%;font-size:15px;padding:7px 8px;line-height:1.1}.pbtns .btn small{font-size:10.500px}
+#rage{animation:ragep2 .6s infinite alternate}@keyframes ragep2{to{transform:scale(1.04)}}
+#choice{position:fixed;left:0;right:0;bottom:200px;z-index:120;display:grid;place-items:center;pointer-events:none}
+.chbox{pointer-events:auto;padding:14px 18px 16px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.chs{display:flex;gap:12px}.chs .btn{font-size:20px;padding:10px 20px}
+.tinfo{width:200px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;text-align:center}
+.tinfo b{font-family:"Lilita One";font-weight:400;font-size:19px}.tinfo span{font-size:13.500px;font-weight:700}.tinfo i{font-style:normal;font-size:12px;opacity:.7}
+.evo{position:absolute!important;top:24px;right:3px;background:var(--yellow);border:2px solid var(--ink);border-radius:6px;font-family:"Lilita One";font-size:9px;padding:0 4px;z-index:3}
+.evo.fu{top:42px;background:var(--purple);color:#fff}
+.bets{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;font-weight:700;font-size:14px}
+.bets .chip.on{background:var(--yellow);color:var(--ink)}.bets .chip:disabled{opacity:.4;cursor:default}.bets .small{flex-basis:100%;text-align:center}
+.lvup.bad{background:#fde2e0}

@@ -61,7 +61,16 @@ const MG=(function(){
     frame(g.n,'','<div class="mgvs res">'+who(o,you,first===you?'w':'','<em>'+g.show(sc[you])+'</em>')+'<i>VS</i>'+who(o,foe,first===foe?'w':'','<em>'+g.show(sc[foe])+'</em>')+'</div><div class="mgnext">'+(first===you?'Tu commences !':o.names[first]+' commence !')+'</div>');
     await wait(2300);box.classList.add('hide');box.innerHTML='';alive=false;return first}
 
-  return{run,
+  /* mini-jeu éclair d'un sort : arrêter l'aiguille au centre. Renvoie 0 (raté), 1 (normal) ou 2 (parfait). 3,5 s maximum. */
+  async function quick(name){const box=el();alive=true;stopFns=[];box.classList.remove('hide');
+    frame(name,'Arrête l\'aiguille au centre : plus c\'est précis, plus le sort tape fort.','<div class="gauge"><i class="mid"></i><i class="ndl" id="ndl"></i></div><button class="mgbig yellow" id="mgb">Stop</button>');
+    const nd=box.querySelector('#ndl');let x=0,run=true,t0=performance.now();
+    const iv=setInterval(()=>{if(run){x=Math.sin((performance.now()-t0)/190)*100;nd.style.left=(50+x/2)+'%'}},16);
+    await Promise.race([once('#mgb','pointerdown'),wait(3500)]);run=false;clearInterval(iv);
+    const d=Math.abs(x),q=d<=12?2:d<=48?1:0;SND.play(q===2?'quest':q?'tick':'error');
+    box.querySelector('.mgr').textContent=['Raté…','Pas mal.','Parfait !'][q];await wait(550);box.classList.add('hide');box.innerHTML='';alive=false;return q}
+
+  return{run,quick,
     remote(d){const v=Number(d&&d.v);if(!isFinite(v))return;remoteV=v;if(onRemote){onRemote(v);onRemote=null}},
     cancel(){if(!alive)return;alive=false;stopFns.forEach(f=>f());const b=el();if(b){b.classList.add('hide');b.innerHTML=''}}};
 })();
