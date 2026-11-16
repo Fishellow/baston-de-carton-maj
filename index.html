@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Baston de Carton</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Lilita+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style2.css">
+</head>
+<body>
+<canvas id="gl"></canvas>
+
+<!-- bandeau du haut des menus : profil, niveau, pièces, son -->
+<div id="hud">
+  <div class="panel prof">
+    <button id="pface" title="Ouvrir le casier"></button>
+    <div class="pinfo"><input id="pname" maxlength="16" spellcheck="false"><div class="small" id="ptitle"></div></div>
+    <div class="lvl"><div class="lvlb" id="lvln">1</div><div class="lvlr"><div class="lvlbar"><i id="lvlbar"></i></div><div class="small" id="lvlx"></div></div></div>
+  </div>
+  <div class="hudr">
+    <div class="panel pill"><i class="coin"></i><span class="coins"></span></div>
+    <button class="rbtn" id="bSet" title="Réglages" data-ic="gear"></button>
+  </div>
+</div>
+
+<!-- accueil -->
+<div class="scr" id="menu">
+  <div class="mcol">
+    <h1 class="title">BASTON<br>DE CARTON</h1>
+    <button class="btn red play" id="bPlay"><span data-ic="play"></span>JOUER</button>
+    <div class="mrow">
+      <button class="btn" data-go="lobby"><span data-ic="globe"></span>En ligne<small>contre un pote</small></button>
+      <button class="btn" data-go="coll"><span data-ic="cards"></span>Collection<small>cartes et decks</small></button>
+      <button class="btn" data-go="shop"><span data-ic="shop"></span>Boutique<small>cartes et paquets</small><i id="freeTag"></i></button>
+      <button class="btn" data-go="locker"><span data-ic="locker"></span>Casier<small>personnalisation</small></button>
+    </div>
+    <div class="small stats" id="stats"></div>
+    <div id="ver"></div>
+  </div>
+  <div class="panel qpanel" id="quests"></div>
+</div>
+
+<!-- choix de la table -->
+<div id="modes" class="hide">
+  <div class="panel modebox">
+    <div class="label">Choisis ta table</div>
+    <div class="modes">
+      <button class="btn mode" data-mode="classic"><span data-ic="grid4"></span>Classique<small>4 couloirs, 20 points de vie. Rapide.</small></button>
+      <button class="btn mode yellow" data-mode="big"><span data-ic="grid6"></span>Grande Baston<small>6 couloirs, 30 points de vie. Plus de place pour les bâtiments.</small></button>
+      <button class="btn mode" data-mode="story"><span data-ic="flag"></span>Histoire<small id="storyTag">8 chapitres, des boss et des récompenses.</small></button>
+    </div>
+    <button class="btn sm" id="bModesX">Retour</button>
+  </div>
+</div>
+
+<!-- histoire -->
+<div class="scr hide" id="story">
+  <div class="top"><button class="btn sm" data-go="menu"><span data-ic="back"></span> Menu</button><h2 class="big">HISTOIRE</h2><div></div></div>
+  <div class="panel sect"><div class="label">Les chapitres</div><div id="chapters"></div></div>
+</div>
+
+<!-- boutique -->
+<div class="scr hide" id="shop">
+  <div class="top"><button class="btn sm" data-go="menu"><span data-ic="back"></span> Menu</button><h2 class="big">BOUTIQUE</h2><div id="gift"></div></div>
+  <div class="panel sect"><div class="label">Cartes du jour</div><div id="offers"></div></div>
+  <div class="panel sect"><div class="label">Paquets</div><div id="packs"></div></div>
+</div>
+
+<!-- collection -->
+<div class="scr hide" id="coll">
+  <div class="top"><button class="btn sm" data-go="menu"><span data-ic="back"></span> Menu</button><h2 class="big" id="collT"></h2><div id="filters"></div></div>
+  <div class="collwrap">
+    <div id="grid" class="panel"></div>
+    <div class="deckside">
+      <div id="peek"></div>
+      <div class="panel deckbox"><div id="tabs"></div><div class="big" id="dcount"></div>
+        <div class="dbtns"><button class="btn sm green" id="bAuto">Deck auto</button><button class="btn sm" id="bClear">Vider</button></div>
+        <div id="dlist"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- casier -->
+<div class="scr hide" id="locker">
+  <div class="top"><button class="btn sm" data-go="menu"><span data-ic="back"></span> Menu</button><h2 class="big">CASIER</h2><div></div></div>
+  <div class="panel sect" id="lockerBody"></div>
+</div>
+
+<!-- en ligne -->
+<div class="scr hide" id="lobby">
+  <div class="top"><button class="btn sm" data-go="menu"><span data-ic="back"></span> Menu</button><h2 class="big">DUEL EN LIGNE</h2><div></div></div>
+  <div class="lob">
+    <div class="panel lb"><b>1. Créer une partie</b><p>Tu reçois un code à donner à ton pote.</p>
+      <div class="tog"><button class="chip on" data-big="0">Classique</button><button class="chip" data-big="1">Grande Baston</button></div>
+      <button class="btn red" id="bHost">Créer</button><div id="code" class="big"></div></div>
+    <div class="panel lb"><b>2. Rejoindre</b><p>Tape le code de ton pote.</p><input id="jcode" maxlength="4" placeholder="CODE" spellcheck="false"><button class="btn blue" id="bJoin">Rejoindre</button></div>
+  </div>
+  <p class="panel note" id="lmsg">Vous devez avoir la même version du jeu tous les deux. Le deck utilisé est ton deck actif.</p>
+</div>
+
+<!-- duel -->
+<div id="app" class="hide">
+  <div id="heroes"></div>
+  <div id="hand"></div>
+  <div id="side">
+    <div id="loupe"></div>
+    <div id="hint" class="box"></div>
+    <button id="go">Baston !</button>
+    <div id="log" class="box"></div>
+    <div class="sidebtns"><button class="btn sm" id="bSet2" title="Réglages" data-ic="gear"></button><button class="btn sm" id="quit">Abandonner</button></div>
+  </div>
+  <div id="mg" class="hide"></div>
+</div>
+
+<!-- réglages -->
+<div id="settings" class="hide">
+  <div class="panel modebox setbox">
+    <div class="label">Réglages</div>
+    <label class="srow"><span><span data-ic="music"></span> Musique</span><input type="range" id="oMus" min="0" max="100" step="5"><b id="oMusV"></b></label>
+    <label class="srow"><span><span data-ic="sound"></span> Bruitages</span><input type="range" id="oSfx" min="0" max="100" step="5"><b id="oSfxV"></b></label>
+    <div class="srow"><span>Plein écran</span><div class="tog2"><button class="chip" data-full="1">Oui</button><button class="chip" data-full="0">Non</button></div><b class="small">ou touche F11</b></div>
+    <div class="srow"><span>Qualité de l'image</span><div class="tog2"><button class="chip" data-q="high">Haute</button><button class="chip" data-q="low">Rapide</button></div><b class="small">Rapide si ça rame</b></div>
+    <div class="srow"><span>Tremblements d'écran</span><div class="tog2"><button class="chip" data-shake="1">Oui</button><button class="chip" data-shake="0">Non</button></div><b></b></div>
+    <div class="srow last"><button class="btn sm" id="bReset">Effacer ma sauvegarde</button><button class="btn sm green" id="bSetX">Fermer</button></div>
+  </div>
+</div>
+
+<div id="fx"></div><div id="banner"></div><div id="toast"></div>
+<div id="packfx" class="hide"></div>
+<div class="screen hide" id="end"><div class="box"><h1 id="endT"></h1><p id="endP"></p><button id="again">Menu</button></div></div>
+
+<script src="peerjs.min.js"></script>
+<script src="save.js"></script>
+<script src="icons.js"></script>
+<script src="audio.js"></script>
+<script src="cards.js"></script>
+<script src="story.js"></script>
+<script src="store.js"></script>
+<script src="net.js"></script>
+<script src="three.min.js"></script>
+<script src="bbmodels.js"></script>
+<script src="models.js"></script>
+<script src="view3d.js"></script>
+<script src="minigames.js"></script>
+<script src="game.js"></script>
+<script src="menus.js"></script>
+</body>
+</html>

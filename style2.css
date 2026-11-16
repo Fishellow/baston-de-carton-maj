@@ -1,0 +1,208 @@
+/* =====================================================================
+   INTERFACE « CARTON » : papier crème, kraft, traits à l'encre, aplats de couleur.
+   Même trait que les contours des modèles 3D. Pas de dégradés, pas d'emojis.
+   Chargé après style.css, il en remplace l'habillage.
+   ===================================================================== */
+:root{--ink:#2a1b3d;--paper:#fff6e0;--kraft:#e3c594;--kraft2:#c9a26b;--red:#e8443a;--yellow:#ffd23f;--green:#58c48a;--blue:#4aa8e0;--purple:#9b7be0;--r:14px}
+body{background:#1a1230;color:var(--ink)}body:before{display:none}
+.scr{background:rgba(26,18,48,.5);padding:96px 24px 20px;gap:14px}
+.ic{width:1.2em;height:1.2em;vertical-align:-.22em;flex:none}
+.coin{display:inline-block;width:.86em;height:.86em;border-radius:50%;background:var(--yellow);border:.13em solid var(--ink);box-shadow:inset 0 0 0 .1em #f4a300;vertical-align:-.08em;margin:0 .28em 0 .1em;flex:none}
+
+/* panneaux en papier */
+.panel,.box,.glass{background:var(--paper);color:var(--ink);border:3px solid var(--ink);border-radius:var(--r);box-shadow:0 5px 0 var(--ink);backdrop-filter:none}
+.label{display:inline-block;align-self:flex-start;background:var(--ink);color:var(--paper);font-family:"Lilita One";font-size:18px;letter-spacing:.5px;padding:3px 14px 4px;border-radius:9px;transform:rotate(-1.2deg)}
+.small{font-size:12.5px;opacity:.72}
+input{background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius:10px}
+
+/* boutons : aplat, trait, ombre dure */
+.btn,#go,.screen button,.mgbig{position:relative;font-family:"Lilita One";color:var(--ink);background:var(--paper);border:3px solid var(--ink);border-radius:12px;box-shadow:0 5px 0 var(--ink);cursor:pointer;
+  text-shadow:none;transition:transform .09s,box-shadow .09s;overflow:visible}
+.btn:hover,#go:hover,.mgbig:hover,.screen button:hover{transform:translateY(-2px);box-shadow:0 7px 0 var(--ink)}
+.btn:active,#go:active,.mgbig:active,.screen button:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.btn.red,#go,.mgbig.red{background:var(--red);color:#fff}.btn.blue{background:var(--blue);color:#fff}.btn.yellow,.mgbig.yellow{background:var(--yellow)}
+.btn.green,.screen button,.mgbig.green{background:var(--green)}.btn.purple{background:var(--purple);color:#fff}.btn.kraft{background:var(--kraft)}
+.btn:disabled,#go:disabled{background:#cfc7b8;color:#7d7486;cursor:default;transform:none;box-shadow:0 5px 0 var(--ink)}
+.btn.sm{font-size:15px;padding:6px 14px;box-shadow:0 4px 0 var(--ink)}
+.btn small{display:block;font-family:Fredoka;font-weight:500;font-size:12px;opacity:.8}
+
+/* bandeau du haut */
+#hud{position:fixed;left:0;right:0;top:0;z-index:20;display:flex;justify-content:space-between;align-items:flex-start;padding:14px 18px;pointer-events:none}
+#hud>*{pointer-events:auto}
+.prof{display:flex;align-items:center;gap:12px;padding:8px 16px 8px 8px}
+#pface,.face{width:56px;height:56px;border-radius:50%;border:3px solid var(--ink);background:var(--kraft);overflow:hidden;display:grid;place-items:center;padding:0;flex:none}
+#pface{cursor:pointer}
+.fimg{width:118%;height:118%;object-fit:contain;margin-top:8%}
+#pname{width:160px;border:none;border-bottom:2px dashed #2a1b3d55;border-radius:0;padding:0;font-size:20px;background:none;color:var(--ink)}
+#ptitle{color:var(--red);font-weight:700;opacity:1}
+.lvl{display:flex;align-items:center;gap:8px;margin-left:8px;padding-left:12px;border-left:2px dashed #2a1b3d44}
+.lvlb{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--yellow);font-family:"Lilita One";font-size:19px}
+.lvlbar{width:140px;height:12px;border-radius:7px;background:#fff;border:2px solid var(--ink);overflow:hidden}
+.lvlbar i{display:block;height:100%;background:var(--yellow)}
+.hudr{display:flex;gap:10px;align-items:center}
+.pill{padding:7px 16px 7px 10px;font-family:"Lilita One";font-size:21px;display:flex;align-items:center}
+.rbtn{width:44px;height:44px;border-radius:12px;font-size:19px;cursor:pointer;border:3px solid var(--ink);background:var(--paper);color:var(--ink);box-shadow:0 4px 0 var(--ink);display:grid;place-items:center}
+.rbtn.off{background:#cfc7b8;color:#8c8496}.rbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+
+/* accueil */
+#menu{flex-direction:row;justify-content:center;align-items:center;gap:36px}
+.mcol{display:flex;flex-direction:column;align-items:center;gap:18px}
+.title{font-size:min(12vh,90px);color:var(--red);background:none;-webkit-text-stroke:3px var(--ink);text-shadow:0 6px 0 var(--ink);filter:none;animation:none;transform:rotate(-2deg)}
+.btn.play{font-size:38px;padding:14px 76px 16px;border-radius:16px;box-shadow:0 7px 0 var(--ink);animation:none;display:flex;align-items:center;gap:12px}
+.btn.play:hover{box-shadow:0 9px 0 var(--ink)}
+.mrow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;width:min(640px,92vw)}
+.mrow .btn{font-size:17px;padding:12px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.05;position:relative}
+.mrow .btn .ic{width:30px;height:30px}
+.mrow .btn small{font-size:11.5px}
+#freeTag{position:absolute;top:-10px;right:-8px;background:var(--red);color:#fff;border:2px solid var(--ink);border-radius:9px;padding:1px 7px;font-family:"Lilita One";font-size:12px;font-style:normal}#freeTag:empty{display:none}
+.stats{color:var(--paper);opacity:.85}
+.qpanel{width:330px;padding:14px 16px 12px;display:flex;flex-direction:column;gap:10px}
+.quest{border:2px solid var(--ink);border-radius:10px;padding:8px 10px;display:grid;grid-template-columns:1fr auto;gap:5px 10px;align-items:center;background:#fff}
+.quest.ready{background:#e3f6ea}.quest.done{opacity:.5}
+.qn{font-weight:700;font-size:13.5px}
+.qbar{grid-column:1;height:13px;border-radius:7px;background:#fff;border:2px solid var(--ink);position:relative;overflow:hidden}
+.qbar i{display:block;height:100%;background:var(--yellow)}
+.qbar span{position:absolute;inset:0;text-align:center;font-size:9.5px;font-weight:700;line-height:9px}
+.quest .btn,.qr{grid-column:2;grid-row:1 / span 2}
+.qr{font-family:"Lilita One";font-size:16px;display:flex;align-items:center}.qr.ok{color:#2f8f5b}
+.qfoot{font-size:11px;opacity:.65;text-align:center}
+
+/* choix de la table */
+#modes,#mg{position:fixed;inset:0;z-index:230;display:grid;place-items:center;background:rgba(26,18,48,.72)}
+.modebox{padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px;width:min(820px,94vw)}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.mode{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 12px;font-size:20px;text-align:center}
+.mode .ic{width:54px;height:54px}.mode small{font-size:12.5px;line-height:1.25}
+.modebox .btn.sm{align-self:center}
+
+/* entêtes d'écran */
+.top{display:flex;align-items:center;justify-content:space-between;width:min(1150px,100%);gap:12px}
+.top h2{font-size:30px;color:var(--paper);-webkit-text-stroke:0;text-shadow:0 3px 0 var(--ink)}
+.sect{width:min(1150px,100%);padding:14px 18px 16px;display:flex;flex-direction:column;gap:12px}
+.note{padding:10px 18px;max-width:700px;text-align:center}
+
+/* boutique */
+#offers{display:flex;gap:22px;justify-content:center;flex-wrap:wrap}
+.offer{display:flex;flex-direction:column;align-items:center;gap:9px}
+#packs{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin:0}
+.pack{width:136px;padding:10px 8px;gap:5px;border-radius:12px;display:flex;flex-direction:column;align-items:center;text-align:center;background:#fff;border:2px solid var(--ink);box-shadow:none}
+.pack b{font-family:"Lilita One";font-size:14px;font-weight:400}.pack p{font-size:11px;margin:0 0 3px;min-height:28px;opacity:.75}
+.pkart{width:74px;height:98px;border:3px solid var(--ink);border-radius:8px;background:var(--kraft);position:relative;overflow:hidden;display:grid;place-items:end center;box-shadow:0 4px 0 var(--ink)}
+.pkart:before{content:"";position:absolute;left:0;right:0;top:14px;height:16px;background:var(--pc,var(--red));border-top:3px solid var(--ink);border-bottom:3px solid var(--ink)}
+.pkart img{width:92%;position:relative;margin-bottom:2px}
+.pkart.big{width:190px;height:250px;cursor:pointer;animation:pks .5s infinite;border-width:5px;box-shadow:0 8px 0 var(--ink)}.pkart.big:before{top:36px;height:40px;border-width:5px}
+#packfx{background:rgba(26,18,48,.92)}.tip{color:var(--paper);font-size:24px}
+.fc .bk{border:3px solid var(--ink);background:repeating-linear-gradient(45deg,var(--red) 0 12px,var(--yellow) 12px 24px);font-size:0}
+.fc .tag{color:var(--paper)}
+
+/* collection */
+#filters{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.chip{font-family:"Lilita One";font-size:14px;padding:4px 12px;border-radius:9px;border:3px solid var(--ink);background:var(--paper);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.chip.on{background:var(--ink);color:var(--paper)}
+#grid{background:var(--kraft)}
+.gc{zoom:1}.gc.locked .card{filter:grayscale(1) brightness(.55)}
+.gc.used .card{filter:none;outline:4px solid var(--green);outline-offset:1px}
+.gc .cnt{background:var(--ink);color:var(--paper);border:none}
+.dbtns{display:flex;gap:6px;margin-bottom:6px}.dbtns .btn{flex:1;font-size:14px;padding:5px 4px}
+.tab{color:var(--ink);background:#fff}.tab.on{background:var(--yellow)}
+.dr{color:var(--ink);background:#fff;border:2px solid var(--ink);border-left-width:8px}
+#dcount{color:#2f8f5b}#dcount.bad{color:var(--red)}
+
+/* casier */
+#lockerBody{overflow:auto;gap:16px}
+.lsec{display:flex;flex-direction:column;gap:8px}
+.lrow{display:flex;gap:10px;flex-wrap:wrap}
+.litem{position:relative;min-width:76px;padding:8px 10px 16px;border-radius:12px;border:3px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:Fredoka;font-weight:700;font-size:12px}
+.litem.on{background:var(--yellow);box-shadow:0 4px 0 var(--ink)}
+.litem.lock{background:#e6dfd0;cursor:default}.litem.lock>*:not(em){filter:grayscale(1);opacity:.45}
+.litem em{position:absolute;inset:auto 0 2px 0;font-style:normal;font-size:10px;text-align:center;display:flex;gap:2px;justify-content:center;align-items:center}
+.litem .face{width:50px;height:50px}
+.lback{width:46px;height:62px;border-radius:7px;border:3px solid var(--ink)}
+.lhalo{width:46px;height:46px;border-radius:50%;border:3px solid var(--ink);background:var(--h)}
+.ltable{width:76px;height:50px;border-radius:7px;border:3px solid var(--ink);background:var(--m);box-shadow:inset 0 0 0 4px var(--l)}
+.ltitle{font-family:"Lilita One";font-size:14px;padding:6px 4px;font-weight:400}
+.track{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px}
+.tk{flex:none;width:124px;padding:8px;border-radius:10px;background:#fff;border:2px solid var(--ink);text-align:center;font-size:11px;opacity:.55}
+.tk b{display:block;font-family:"Lilita One";font-size:20px}.tk.got{opacity:1;background:#e3f6ea}
+
+/* histoire */
+#chapters{display:flex;flex-direction:column;gap:10px;overflow:auto}
+.chap{display:grid;grid-template-columns:auto auto 1fr auto;gap:14px;align-items:center;padding:10px 14px;border:2px solid var(--ink);border-radius:12px;background:#fff}
+.chap.lock{opacity:.5}.chap.done{background:#e3f6ea}
+.chn{width:38px;height:38px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-family:"Lilita One";font-size:18px}
+.chap .face{width:64px;height:64px}
+.cht b{font-family:"Lilita One";font-size:19px;font-weight:400;display:block}.cht span{font-size:13px;opacity:.8}.cht i{display:block;font-style:normal;font-size:12px;font-weight:700;color:#2f8f5b;margin-top:2px}
+
+/* en ligne */
+.lob{display:flex;gap:22px;flex-wrap:wrap;justify-content:center}
+.lb{width:300px;padding:18px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.lb b{font-family:"Lilita One";font-size:21px;font-weight:400}.lb p{margin:0;font-size:14px}
+#code{color:var(--red);-webkit-text-stroke:0;text-shadow:0 3px 0 var(--ink)}
+.tog{display:flex;gap:6px}.tog .chip.on{background:var(--yellow);color:var(--ink)}
+
+/* duel */
+.hero{padding:6px 14px 6px 6px;gap:10px}
+.hero .face{width:46px;height:46px}
+.hero b{font-size:17px}.hinfo .small{opacity:.7}
+.hp{display:flex;align-items:center;gap:4px;margin-left:auto;padding-left:10px;font-family:"Lilita One";font-size:24px;color:var(--ink)}.hp .ic{color:var(--red);width:22px;height:22px}
+.nrj i{border:2px solid var(--ink);background:#fff}.nrj i.on{background:var(--yellow);box-shadow:none}
+#ehand i{border:2px solid var(--ink)}
+#hint{font-size:13.5px;font-weight:700;min-height:54px;padding:8px 10px}
+#go{font-size:26px;padding:11px 10px 13px;width:100%;border-radius:12px}
+#log{padding:8px 10px;font-size:12px;gap:2px}
+.lg:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#b9b0a2;margin-right:6px}
+.lg.me:before{background:var(--blue)}.lg.foe:before{background:var(--red)}.lg.ko{font-weight:700}
+.card{color:var(--ink)}
+.card .kd{display:inline-block;background:var(--ink);color:var(--paper);border-radius:5px;padding:0 4px;font-size:.92em;font-weight:700}
+.card.build{background:var(--kraft)}.card.build .art{background:repeating-linear-gradient(90deg,#f1dcb4 0 6px,#e9d0a0 6px 7px)}
+.zz{width:22px;height:22px;border-radius:50%;background:var(--paper);border:2px solid var(--ink);display:grid;place-items:center;font-size:12px}
+.zz .ic{width:14px;height:14px}.zz.zl{right:auto;left:4px;top:24px}.zz.zl2{right:auto;left:4px;top:50px}
+.float{-webkit-text-stroke:0;text-shadow:0 2px 0 var(--ink),2px 0 0 var(--ink),-2px 0 0 var(--ink),0 -2px 0 var(--ink);font-size:30px}
+.bit,.conf{width:12px;height:12px;border:2px solid var(--ink);font-size:0}
+#banner{-webkit-text-stroke:0;color:var(--paper);text-shadow:0 5px 0 var(--ink),3px 0 0 var(--ink),-3px 0 0 var(--ink),0 -3px 0 var(--ink)}
+#toast{background:var(--ink);color:var(--paper);border:none;border-radius:12px;box-shadow:none;font-weight:700}
+
+/* fin de partie */
+.screen{background:rgba(26,18,48,.82)}
+.screen .box{padding:26px 40px 28px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.screen h1{font-size:52px;color:var(--green);-webkit-text-stroke:3px var(--ink);text-shadow:0 5px 0 var(--ink);transform:rotate(-2deg)}
+.screen.lost h1{color:var(--red)}
+.screen p{font-size:17px;margin:0;font-family:Fredoka;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:10px}
+.gains{display:flex;gap:18px;font-family:"Lilita One";font-size:30px;align-items:center}.gains .xp{color:var(--blue)}
+.lvup,.story-win{font-size:14px;background:#e3f6ea;border:2px solid var(--ink);border-radius:9px;padding:5px 12px}
+.screen button{font-size:24px;padding:9px 34px;margin-top:6px}
+
+/* mini-jeux de départ */
+.mgbox{width:min(540px,92vw);padding:18px 24px 22px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center}
+.mgbox .label{align-self:center;font-size:24px}
+.mgr{font-size:15px;font-weight:700;min-height:20px}
+.mgbody{width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;min-height:150px;justify-content:center}
+.mgbig{font-size:30px;padding:20px 40px;min-width:240px;user-select:none;touch-action:manipulation}
+.mgvs{display:flex;align-items:center;justify-content:center;gap:20px;width:100%}
+.mgvs>div{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 16px;border-radius:12px;min-width:150px;border:3px solid transparent}
+.mgvs .face{width:72px;height:72px}.mgvs b{font-family:"Lilita One";font-size:18px;font-weight:400}.mgvs em{font-style:normal;font-weight:700}
+.mgvs>i{font-family:"Lilita One";font-style:normal;font-size:28px;color:var(--red)}
+.mgvs .w{border-color:var(--ink);background:var(--yellow)}
+.mgnext{font-family:"Lilita One";font-size:24px}
+.gauge{position:relative;width:100%;height:42px;border-radius:10px;border:3px solid var(--ink);background:linear-gradient(90deg,var(--red) 0 30%,var(--yellow) 30% 44%,var(--green) 44% 56%,var(--yellow) 56% 70%,var(--red) 70%)}
+.gauge .mid{position:absolute;left:50%;top:-7px;bottom:-7px;width:4px;margin-left:-2px;background:var(--ink)}
+.gauge .ndl{position:absolute;top:-10px;bottom:-10px;width:12px;margin-left:-6px;border-radius:6px;background:var(--paper);border:3px solid var(--ink)}
+.mgbar{width:100%;height:14px;border-radius:8px;border:3px solid var(--ink);background:#fff;overflow:hidden}.mgbar i{display:block;height:100%;width:100%;background:var(--yellow)}
+.pfc{display:flex;gap:12px}.pfc .mgbig{min-width:0;padding:14px 18px;font-size:16px;display:flex;flex-direction:column;align-items:center;gap:4px}.pfc .ic{width:52px;height:52px}
+.die{display:inline-grid;place-items:center;width:40px;height:40px;border:3px solid var(--ink);border-radius:9px;background:#fff;font-family:"Lilita One";font-size:24px}
+.mgwait{width:44px;height:44px;border-radius:50%;border:5px solid var(--ink);border-top-color:var(--yellow);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* réglages */
+#settings{position:fixed;inset:0;z-index:300;display:grid;place-items:center;background:rgba(26,18,48,.72)}
+.setbox{width:min(560px,94vw);gap:10px}
+.srow{display:grid;grid-template-columns:170px 1fr 110px;gap:12px;align-items:center;padding:8px 10px;border:2px solid var(--ink);border-radius:10px;background:#fff;font-weight:700;font-size:15px}
+.srow>span{display:flex;align-items:center;gap:6px}.srow b{font-family:"Lilita One";font-weight:400;text-align:right}.srow b.small{font-family:Fredoka;font-weight:500;font-size:11.500px}
+.srow input[type=range]{width:100%;accent-color:var(--ink);height:22px;border:none;padding:0;background:none}
+.srow.last{display:flex;justify-content:space-between;border:none;background:none;padding:4px 0 0}
+.tog2{display:flex;gap:6px}.tog2 .chip.on{background:var(--yellow);color:var(--ink)}
+.sidebtns{display:flex;gap:8px;align-items:center}.sidebtns .btn{display:flex;align-items:center}
+
+/* numéro de version / bouton de mise à jour sous le menu */
+#ver{color:var(--paper);font-size:12px;opacity:.85;min-height:18px;display:flex;align-items:center}
+#ver .btn{opacity:1}

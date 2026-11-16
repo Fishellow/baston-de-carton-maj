@@ -1,0 +1,6 @@
+Musiques originales de Baston de Carton.
+Composées et fabriquées par le script musique/compose.py (aucun morceau externe).
+
+- menu.ogg : le grenier, tranquille
+- duel.ogg : la baston
+- mini.ogg : les mini-jeux
