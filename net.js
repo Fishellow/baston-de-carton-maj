@@ -1,6 +1,6 @@
 /* Parties en ligne : connexion directe entre joueurs (PeerJS / WebRTC) avec un code de partie.
    Duel : 1 hôte + 1 invité. 2 contre 2 : 1 hôte + jusqu'à 3 invités, tout passe par l'hôte qui fait suivre. */
-const NET={peer:null,conns:[],max:1,onData:()=>{},onClose:()=>{},
+const NET={peer:null,conns:[],max:1,wrap:null,target:null,onData:()=>{},onClose:()=>{},
   get conn(){return this.conns[0]||null},
   host(code,onReady,onErr,max){this.stop();this.max=max||1;this.peer=new Peer('bdc-'+code);
     this.peer.on('open',onReady);this.peer.on('error',onErr);
@@ -15,8 +15,9 @@ const NET={peer:null,conns:[],max:1,onData:()=>{},onClose:()=>{},
     c.on('data',d=>{c.last=Date.now();if(!d||d.t==='ping')return;if(d.t==='bye')return lost();this.onData(d,c)});
     c.on('close',lost);c.on('error',lost)},
   /* à tout le monde (sauf, si on veut, celui qui vient de l'envoyer) */
-  send(o,except){for(const c of this.conns)if(c!==except&&c.open)c.send(o)},
+  /* tournoi : wrap étiquette les messages d'un match, target les envoie à un seul joueur */
+  send(o,except){if(this.wrap)o=this.wrap(o);for(const c of this.target?[this.target]:this.conns)if(c!==except&&c.open)c.send(o)},
   to(c,o){if(c&&c.open)c.send(o)},
-  stop(){this.send({t:'bye'});this.conns.forEach(c=>clearInterval(c.hb));const p=this.peer;this.peer=null;this.conns=[];if(p)setTimeout(()=>{try{p.destroy()}catch(e){}},200)},
+  stop(){this.wrap=null;this.target=null;this.send({t:'bye'});this.conns.forEach(c=>clearInterval(c.hb));const p=this.peer;this.peer=null;this.conns=[];if(p)setTimeout(()=>{try{p.destroy()}catch(e){}},200)},
 };
 addEventListener('beforeunload',()=>NET.send({t:'bye'}));

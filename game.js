@@ -15,7 +15,8 @@ function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(see
 const shuffle=(a,R)=>{for(let i=a.length-1;i>0;i--){const j=R()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 const LANES=()=>Array.from({length:NL},(_,i)=>i);
 /* une créature posée sur un couloir. turns = tours survécus (évolution à 3), fused = déjà fusionnée */
-const mkUnit=id=>{const d=C[id];return{id,atk:d.a,hp:d.h,max:d.h,stun:false,shield:d.shield||0,poison:0,revived:false,turns:0,evo:false,fused:false,uid:++G.uid}};
+const STARM=[1,1,1.8,3.2];
+const mkUnit=(id,star)=>{const d=C[id],m=STARM[star|0]||1,a=Math.round(d.a*m),h=Math.max(1,Math.round(d.h*m));return{id,star:star|0||1,atk:a,hp:h,max:h,stun:false,shield:d.shield||0,poison:0,revived:false,turns:0,evo:false,fused:false,uid:++G.uid}};
 const mkBld=id=>({id,hp:C[id].bh||3,uid:++G.uid});
 /* le bâtiment de mon couloir l (ou rien) */
 const bld=(s,l)=>{const b=G[s].bld[l];return b?C[b.id]:null};
@@ -131,7 +132,7 @@ addEventListener('resize',fit);
 
 /* ---------- déroulement ---------- */
 function newGame(o){
-  MODE=o.mode;ME=o.me;MYSEAT=o.seat|0;AIRUN=o.mode==='solo'||!!o.host;LOCK=false;MGBUSY=false;NL=o.big?6:4;const R=rng(o.seed),O=opp(ME),hp=o.seats?40:o.big?30:20;
+  MODE=o.mode;ME=o.me;MYSEAT=o.seat|0;AIRUN=o.mode==='solo'||!!o.host;LOCK=false;MGBUSY=false;NL=o.big?6:4;const R=rng(o.seed),O=opp(ME),hp=o.auto?12:o.seats?40:o.big?30:20;
   /* les sièges : 1 par côté en duel, 2 en 2 contre 2. g = numéro du joueur à la table (0 à 3), ai = joué par le robot */
   const defs=o.seats||{p:[{deck:o.decks.p,name:o.names.p,face:o.faces.p,title:o.titles&&o.titles.p,look:o.looks&&o.looks.p,g:0}],e:[{deck:o.decks.e,name:o.names.e,face:o.faces.e,title:o.titles&&o.titles.e,look:o.looks&&o.looks.e,g:1,ai:o.mode==='solo'}]};
   MYG=defs[ME][MYSEAT].g|0;
@@ -143,7 +144,9 @@ function newGame(o){
   G={p,e,names:view('name'),faces:view('face'),titles:view('title'),two:p.seats.length>1,active:null,sel:null,busy:true,over:false,uid:0,capE:o.big?8:7,big:!!o.big,story:o.story,turn:0,phase:'',bet:o.bet|0,R:rng(o.seed^0x2f6e2b1)};
   /* Grande Baston : chacun a son quartier général au milieu */
   if(o.big)for(const P of[p,e])P.bld[NL>>1]=mkBld('qg');
-  for(const P of[p,e])for(const st of P.seats)for(let i=0;i<4;i++)st.hand.push(st.deck.pop());
+  for(const P of[p,e])for(const st of P.seats)for(let i=0;i<4&&st.deck.length;i++)st.hand.push(st.deck.pop());
+  G.auto=!!o.auto;$('#app').classList.toggle('auto',G.auto);
+  if(o.auto)for(const s of['p','e'])(o.auto[s]||[]).slice(0,NL).forEach((u,l)=>{if(u&&C[u.id]&&C[u.id].k==='c')G[s].lanes[l]=mkUnit(u.id,u.star)});
   $('#heroes').innerHTML=`<div class="hero panel top" id="hero-${O}"></div><div class="hero panel bot" id="hero-${ME}"></div>`;
   $('#log').innerHTML='';$('#fx').innerHTML='';$('#bubbles').innerHTML='';$('#emoList').classList.add('hide');$('#loupe').innerHTML='';
   document.querySelectorAll('.scr').forEach(x=>x.classList.add('hide'));$('#app').classList.remove('hide');fit();
@@ -153,6 +156,7 @@ function newGame(o){
   V.onHover=h=>{if(!h)return;const c=G[h.s].lanes[h.l],b=G[h.s].bld[h.l];$('#loupe').innerHTML=c?cardHTML(c.id,c,false):b?cardHTML(b.id,{bhp:b.hp},false):terrHTML(G[h.s].terr[h.l])};
   render();
   /* un mini-jeu tiré au hasard décide qui commence ; l'autre pioche une carte en plus (les actions du pote attendent derrière) */
+  if(o.auto){Q=sleep(1600).then(()=>autoFight(o.first==='e'?'e':'p'));return}
   /* en 2 contre 2, pas de mini-jeu : l'équipe qui commence est tirée au sort (même tirage chez tout le monde) */
   Q=sleep(1800).then(()=>G.two?(G.R()<.5?'p':'e'):MG.run({mode:MODE,me:ME,seed:o.seed,names:{p:G.names.p,e:G.names.e},faces:{p:G.faces.p,e:G.faces.e}})).then(async first=>{
     if(G.over)return;const sec=opp(first);G[sec].hand.push(G[sec].deck.pop());if(first===ME&&!G.two)ev(ME,'mgwin',1);
@@ -238,9 +242,18 @@ async function endTurn(s){
   if(G.over)return;
   /* évolution : une créature qui a tenu 3 de ses tours devient plus forte */
   await each(s,async(c,l)=>{c.turns++;if(c.turns>=(C[c.id].fastEvo?1:3)&&!c.evo)await evolve(s,l)});
-  render();await sleep(450);await startTurn(o);
+  render();await sleep(450);if(G.auto)return;await startTurn(o);
 }
+/* combat automatique : chaque camp tape à tour de rôle, 5 fois chacun au plus ; à la fin, le héros le plus en forme gagne */
+async function autoFight(first){let s=first;banner('BASTON !');await sleep(900);
+  for(let t=0;t<10&&!G.over;t++){G.active=s;G.turn++;G.busy=true;render();
+    for(let l=0;l<NL&&!G.over;l++){const c=G[s].lanes[l];if(c&&c.poison){SND.play('poison');await hurt(s,l,c.poison,{through:1})}}
+    if(G.over)break;G.phase='main';G.busy=false;await endTurn(s);s=opp(s);
+    if(!G.over&&!G.p.lanes.some(Boolean)&&!G.e.lanes.some(Boolean))break}
+  if(G.over)return;const sum=x=>G[x].lanes.reduce((a,c)=>a+(c?c.hp:0),0);
+  finish(G.p.hp!==G.e.hp?(G.p.hp>G.e.hp?'p':'e'):sum('p')!==sum('e')?(sum('p')>sum('e')?'p':'e'):first)}
 function finish(w,why){if(G.over)return;G.over=true;G.busy=true;render();if(typeof MG!=='undefined')MG.cancel();
+  if(G.auto){const won=w===ME,left=G[w].lanes.filter(Boolean).length;SND.play(won?'win':'lose');banner(won?'GAGNÉ !':'PERDU…');setTimeout(()=>{if(typeof TOUR!=='undefined'&&TOUR.fightDone)TOUR.fightDone(won,left)},1900);return}
   const win=w===ME,gain=(MODE==='net'?(win?60:25):(win?40:10))+(G.big?15:0),xp=(win?60:25)+(G.big?15:0),bet=G.bet|0;
   S.d.coins=Math.max(0,S.d.coins+gain+(win?bet:-bet));win?S.d.wins++:S.d.losses++;
   if(win){ev(ME,'win',1);if(G[ME].hp>=G[ME].maxHp/2)ev(ME,'winBig',1)}ev(ME,'game',1);
@@ -254,7 +267,7 @@ function finish(w,why){if(G.over)return;G.over=true;G.busy=true;render();if(type
     +(bet?`<div class="lvup ${win?'':'bad'}">Pari : ${win?'+':'-'}${bet} pièces</div>`:'')
     +(storyTxt?`<div class="story-win">Chapitre terminé — ${storyTxt}</div>`:'')+up.map(u=>`<div class="lvup">Niveau ${u.lvl} — ${u.txt}</div>`).join('');
   if(win){const cols=['#e8443a','#ffd23f','#58d68d','#7fd4ff','#fff6e0'];for(let i=0;i<60;i++){const c=document.createElement('div');c.className='conf';c.style.background=cols[i%5];c.style.left=Math.random()*100+'vw';c.style.animationDuration=2+Math.random()*3+'s';c.style.animationDelay=Math.random()*1.5+'s';$('#fx').appendChild(c)}}
-  setTimeout(()=>$('#end').classList.remove('hide'),900)}
+  setTimeout(()=>{if(G&&G.over)$('#end').classList.remove('hide')},900)}
 
 /* ---------- émotes : une petite phrase que tout le monde voit ---------- */
 const EMOTES=['Bien joué !','Aïe…','Ha ha !','Tu vas voir…','Dépêche !','GG'];
@@ -269,7 +282,7 @@ $('#bEmo').addEventListener('click',()=>$('#emoList').classList.toggle('hide'));
 $('#emoList').addEventListener('click',e=>{const b=e.target.closest('[data-emo]');if(!b)return;$('#emoList').classList.add('hide');sayEmote(+b.dataset.emo)});
 
 /* ---------- actions (les miennes et celles du pote en ligne) ---------- */
-function act(a){if(LOCK||!G||G.busy||G.over||!myTurn())return;LOCK=true;if(MODE==='net')NET.send(G.two?Object.assign({g:MYG},a):a);Q=Q.then(()=>apply(ME,a,MYSEAT)).finally(()=>LOCK=false)}
+function act(a){if(LOCK||!G||G.auto||G.busy||G.over||!myTurn())return;LOCK=true;if(MODE==='net')NET.send(G.two?Object.assign({g:MYG},a):a);Q=Q.then(()=>apply(ME,a,MYSEAT)).finally(()=>LOCK=false)}
 /* action d'un autre joueur. En 2 contre 2, a.g dit qui (0 à 3 : pair = côté p, impair = côté e) */
 function remote(a){Q=Q.then(()=>G&&G.two?apply(a.g%2?'e':'p',a,a.g>>1):apply(opp(ME),a,0))}
 async function apply(s,a,seat){if(!G||G.over||G.active!==s||G[s].cur!==(seat|0))return;

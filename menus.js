@@ -6,10 +6,10 @@ let CUR='menu';
 function applyLook(){if(typeof V!=='undefined'&&V.setLook)V.setLook({halo:HALOS[S.d.use.halo].c,back:BACKS[S.d.use.back],table:TABLES[S.d.use.table],perso:{body:S.d.use.body,hat:S.d.use.hat,face:S.d.avatar}})}
 function show(id){CUR=id;document.querySelectorAll('.scr').forEach(x=>x.classList.toggle('hide',x.id!==id));$('#app').classList.add('hide');$('#modes').classList.add('hide');$('#hud').classList.remove('hide');
   applyLook();if(typeof V!=='undefined'&&V.showcase)V.showcase();SND.music('menu');
-  drawHud();if(id==='friends')drawFriends();if(id==='lobby2')drawL2();if(id==='menu')drawMenu();if(id==='shop')drawShop();if(id==='coll'){EDIT=false;const D=S.d.decks[S.d.active];if(D.auto&&PRE[D.auto]){D.cards=S.autoDeck(PRE[D.auto].o);S.save()}drawColl()}if(id==='locker')drawLocker();if(id==='story')drawStory()}
+  drawHud();if(id==='friends')drawFriends();if(id==='tour'&&typeof drawTour==='function')drawTour();if(id==='lobby2')drawL2();if(id==='menu')drawMenu();if(id==='shop')drawShop();if(id==='coll'){EDIT=false;const D=S.d.decks[S.d.active];if(D.auto&&PRE[D.auto]){D.cards=S.autoDeck(PRE[D.auto].o);S.save()}drawColl()}if(id==='locker')drawLocker();if(id==='story')drawStory()}
 function toast(t){const b=$('#toast');b.textContent=t;b.classList.remove('show');void b.offsetWidth;b.classList.add('show')}
 function levelUps(up){up.forEach((u,i)=>setTimeout(()=>toast('Niveau '+u.lvl+' ! '+u.txt),i*2700))}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){if(/^(menu|lobby|lobby2)$/.test(b.dataset.go)){NET.stop();l2Reset()}show(b.dataset.go)}});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){if(/^(menu|lobby|lobby2|tour)$/.test(b.dataset.go)){NET.stop();l2Reset();if(typeof tourReset==='function')tourReset()}show(b.dataset.go)}});
 /* les portraits 3D arrivent juste après le chargement : on redessine l'écran en cours */
 document.addEventListener('ports',()=>{if($('#app').classList.contains('hide'))show(CUR)});
 const price=n=>COIN+n;
@@ -323,7 +323,7 @@ function drawFriends(){$('#fcode').textContent=S.d.fcode;
       <button class="btn sm red" data-inv="1v1" data-c="${f.code}" ${on?'':'disabled'}>Duel</button><button class="btn sm yellow" data-inv="2v2" data-c="${f.code}" ${on?'':'disabled'}>2 contre 2</button>
       <button class="frx" data-del="${f.code}" title="Retirer de la liste">×</button></div>`}).join('')+(S.d.friends.length?'':'<p class="dkempty">Pas encore d\'ami ici.<br>Échangez vos codes, puis ajoute-le à gauche.</p>')}
 function drawFrTag(){const n=S.d.friends.filter(f=>FR.online(f.code)).length,t=$('#frTag');if(t){t.textContent=n?n+' en ligne':'';t.classList.toggle('show',!!n)}}
-FR.onChange=()=>{drawFrTag();if(CUR==='friends')drawFriends();if(CUR==='lobby2'&&L2.code)drawL2()};
+FR.onChange=()=>{drawFrTag();if(CUR==='tour'&&typeof TOUR!=='undefined'&&TOUR.code)drawTour();if(CUR==='friends')drawFriends();if(CUR==='lobby2'&&L2.code)drawL2()};
 $('#bAdd').addEventListener('click',()=>{const err=FR.add($('#fadd').value),m=$('#frmsg');m.dataset.keep=1;m.textContent=err||'Ajouté. Il apparaîtra en ligne dès que son jeu sera ouvert.';if(!err){$('#fadd').value='';SND.play('quest')}else SND.play('error');setTimeout(()=>{delete m.dataset.keep},6000);drawFriends()});
 $('#fadd').addEventListener('keydown',e=>{if(e.key==='Enter')$('#bAdd').click()});
 $('#bCopy').addEventListener('click',()=>{const t=S.d.fcode,done=()=>toast('Code copié : '+t);
@@ -339,13 +339,13 @@ function closeInvite(ans){if(!INV)return;clearTimeout(INV.timer);if(ans)FR.reply
 FR.onInvite=(f,mode,room,c)=>{
   if(!$('#app').classList.contains('hide')||NET.peer||INV)return FR.reply(c,'busy');
   INV={f,mode,room,c,timer:setTimeout(()=>closeInvite('no'),30000)};SND.play('quest');
-  $('#invite').innerHTML=`<span class="face">${faceHTML(f.avatar)}</span><div class="frn"><b>${f.name}</b><small>t'invite : ${mode==='2v2'?'2 contre 2':'duel'}</small></div><button class="btn sm green" data-ans="yes">Accepter</button><button class="btn sm" data-ans="no">Refuser</button>`;
+  $('#invite').innerHTML=`<span class="face">${faceHTML(f.avatar)}</span><div class="frn"><b>${f.name}</b><small>t'invite : ${mode==='2v2'?'2 contre 2':mode==='tour'?'tournoi':'duel'}</small></div><button class="btn sm green" data-ans="yes">Accepter</button><button class="btn sm" data-ans="no">Refuser</button>`;
   $('#invite').classList.remove('hide')};
 $('#invite').addEventListener('click',e=>{const b=e.target.closest('[data-ans]');if(!b||!INV)return;const v=INV;
   if(b.dataset.ans!=='yes')return closeInvite('no');
   if(!myDeck())return closeInvite('no');
   closeInvite();$('#modes').classList.add('hide');
-  if(v.mode==='2v2'){show('lobby2');join2(v.room)}else{show('lobby');joinDuel(v.room)}});
+  if(v.mode==='2v2'){show('lobby2');join2(v.room)}else if(v.mode==='tour'){show('tour');tourJoin(v.room)}else{show('lobby');joinDuel(v.room)}});
 FR.start();drawFrTag();
 
 /* ---------- mise à jour automatique (seulement dans le jeu installé : window.BDC vient de preload.js) ---------- */

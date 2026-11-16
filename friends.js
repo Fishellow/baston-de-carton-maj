@@ -49,7 +49,7 @@ const FR = {
       this.links[code] = c; this.onChange(); return;
     }
     const f = c.fcode && this.friend(c.fcode); if (!f || this.links[c.fcode] !== c) return;
-    if (m.t === 'invite') { const room = String(m.room || ''); if (!/^[A-Z]{4}$/.test(room)) return; this.onInvite(f, m.mode === '2v2' ? '2v2' : '1v1', room, c); }
+    if (m.t === 'invite') { const room = String(m.room || ''); if (!/^[A-Z]{4}$/.test(room)) return; this.onInvite(f, m.mode === '2v2' ? '2v2' : m.mode === 'tour' ? 'tour' : '1v1', room, c); }
     else if (m.t === 'no') toast(f.name + ' a refusé l\'invitation.');
     else if (m.t === 'busy') toast(f.name + ' est déjà en partie.');
   },

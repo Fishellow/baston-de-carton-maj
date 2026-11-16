@@ -8,7 +8,7 @@ const BACKS={classic:{n:'Classique',a:'#e8443a',b:'#ffd23f'},nuit:{n:'Nuit étoi
 const BODIES={bleu:{n:'Bleu'},rouge:{n:'Rouge étoile'},vert:{n:'Vert rayé'},violet:{n:'Violet éclair'},noir:{n:'Noir Boss'},rose:{n:'Rose cœur'}};
 const HATS={aucun:{n:'Aucun'},casquette:{n:'Casquette'},bonnet:{n:'Bonnet'},cowboy:{n:'Cow-boy'},chef:{n:'Toque'},viking:{n:'Casque à cornes'},couronne:{n:'Couronne'}};
 const HALOS={bleu:{n:'Bleu',c:0x4cc9ff},vert:{n:'Vert',c:0x7bd88f},or:{n:'Or',c:0xffc933},violet:{n:'Violet',c:0xb388ff},rouge:{n:'Rouge',c:0xff7b54},blanc:{n:'Blanc pur',c:0xffffff}};
-const TITLES=['Débutant','Bagarreur','Champion du Carton','Légende','Le Boss Final','Sauveur du Carton'];
+const TITLES=['Débutant','Bagarreur','Champion du Carton','Légende','Le Boss Final','Sauveur du Carton','Champion du tournoi'];
 /* récompense de chaque niveau : c = pièces, f = paquets offerts, u / u2 = [type, id] débloqué */
 const LEVELS={2:{c:50},3:{u:['avatar','canard']},4:{u:['back','nuit']},5:{f:1,u:['title','Bagarreur']},6:{u:['halo','vert']},7:{u:['avatar','vache']},8:{u:['back','fromage']},9:{c:100,u:['avatar','fantome']},
   10:{u:['halo','or'],u2:['title','Champion du Carton']},11:{u:['avatar','mouton']},12:{u:['back','slip']},13:{f:1,u:['avatar','licorne']},14:{u:['halo','violet']},15:{u:['back','or'],u2:['title','Légende']},

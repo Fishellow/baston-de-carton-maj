@@ -111,7 +111,7 @@ function terrain(type,g){
 
 /* ---------- unités (créatures) ---------- */
 function spawn(s,l,c){
-  const d=C[c.id],tint=s===me?SIDE.me:SIDE.foe,m=M.build(c.id,tint),u={uid:c.uid,id:c.id,s,l,m,tint,g:new T3.Group(),ph:Math.random()*6,k:'',atk:0,sc:(c.fused?1.22:1.05)*(NLv>4?.9:1),evo:false};
+  const d=C[c.id],tint=s===me?SIDE.me:SIDE.foe,m=M.build(c.id,tint),u={uid:c.uid,id:c.id,s,l,m,tint,g:new T3.Group(),ph:Math.random()*6,k:'',atk:0,sc:(c.fused?1.22:1.05)*(NLv>4?.9:1)*(1+.14*((c.star||1)-1)),evo:false};
   const x=LX(l),z=RZ(s);u.g.position.set(x,.13*SC,z);u.g.scale.setScalar(SC);u.home=u.g.position.clone();scene.add(u.g);
   m.g.position.set(0,m.fly,-.12);m.g.scale.setScalar(1.05);u.g.add(m.g);m.U.uBaseY.value=.13*SC;
   u.card=add(u.g,G0.plane,new T3.MeshBasicMaterial({map:cardTex(c.id)}),0,2.5,.72,.62,.86,1,-PI/2);

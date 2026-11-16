@@ -114,7 +114,7 @@
 
 <!-- en ligne -->
 <div class="scr hide" id="lobby">
-  <div class="top"><button class="btn sm" data-go="menu"><span data-ic="back"></span> Menu</button><h2 class="big">DUEL EN LIGNE</h2><div class="topr"><button class="btn sm yellow" data-go="lobby2">2 contre 2</button><button class="btn sm" data-go="friends">Amis</button></div></div>
+  <div class="top"><button class="btn sm" data-go="menu"><span data-ic="back"></span> Menu</button><h2 class="big">DUEL EN LIGNE</h2><div class="topr"><button class="btn sm yellow" data-go="lobby2">2 contre 2</button><button class="btn sm red" data-go="tour">Tournoi</button><button class="btn sm" data-go="friends">Amis</button></div></div>
   <div class="lob">
     <div class="panel lb"><b>1. Créer une partie</b><p>Tu reçois un code à donner à ton pote.</p>
       <div class="tog"><button class="chip on" data-big="0">Classique</button><button class="chip" data-big="1">Grande Baston</button></div>
@@ -126,7 +126,7 @@
 
 <!-- 2 contre 2 en ligne -->
 <div class="scr hide" id="lobby2">
-  <div class="top"><button class="btn sm" data-go="menu"><span data-ic="back"></span> Menu</button><h2 class="big">2 CONTRE 2</h2><div class="topr"><button class="btn sm" data-go="lobby">Duel</button><button class="btn sm" data-go="friends">Amis</button></div></div>
+  <div class="top"><button class="btn sm" data-go="menu"><span data-ic="back"></span> Menu</button><h2 class="big">2 CONTRE 2</h2><div class="topr"><button class="btn sm" data-go="lobby">Duel</button><button class="btn sm red" data-go="tour">Tournoi</button><button class="btn sm" data-go="friends">Amis</button></div></div>
   <div class="lob" id="l2start">
     <div class="panel lb"><b>1. Créer une table</b><p>Jusqu'à 3 potes te rejoignent. Les places vides sont prises par des robots.</p><button class="btn red" id="b2Host">Créer</button></div>
     <div class="panel lb"><b>2. Rejoindre</b><p>Tape le code de la table.</p><input id="j2code" maxlength="4" placeholder="CODE" spellcheck="false"><button class="btn blue" id="b2Join">Rejoindre</button></div>
@@ -140,6 +140,30 @@
     <div class="panel l2side"><div class="label">Inviter un ami</div><div id="l2friends"></div></div>
   </div>
   <p class="panel note" id="l2msg">Chaque équipe partage son plateau et ses points de vie. Les coéquipiers jouent chacun leur tour, avec leur propre deck.</p>
+</div>
+
+<!-- tournoi « Baston Royale » : boutique, combats automatiques, le dernier en vie gagne -->
+<div class="scr hide" id="tour">
+  <div class="top"><button class="btn sm" data-go="menu"><span data-ic="back"></span> Menu</button><h2 class="big">BASTON ROYALE</h2><div class="topr"><button class="btn sm" data-go="lobby">Duel</button><button class="btn sm" data-go="friends">Amis</button></div></div>
+  <div class="lob" id="tstart">
+    <div class="panel lb"><b>1. Créer un tournoi</b><p>Jusqu'à 8 joueurs. Les places vides sont des robots.</p><button class="btn red" id="btHost">Créer</button></div>
+    <div class="panel lb"><b>2. Rejoindre</b><p>Tape le code du tournoi.</p><input id="jtcode" maxlength="4" placeholder="CODE" spellcheck="false"><button class="btn blue" id="btJoin">Rejoindre</button></div>
+  </div>
+  <div class="l2room hide" id="troom">
+    <div class="panel l2main"><div class="l2code">Code du tournoi <b id="tcode"></b></div><div id="tlist"></div>
+      <div class="l2acts" id="tacts"><button class="btn red" id="btGo">Lancer le tournoi</button></div></div>
+    <div class="panel l2side"><div class="label">Inviter un ami</div><div id="tfriends"></div></div>
+  </div>
+  <div class="hide" id="roy">
+    <div class="panel rside"><div class="label">Joueurs</div><div id="rplayers"></div></div>
+    <div class="panel rmain">
+      <div class="rtop"><b id="rround"></b><b id="rtimer"></b><span id="rgold"></span></div>
+      <div class="rrow"><div><div class="label">Ton équipe</div><div class="rslots" id="rboard"></div></div><div><div class="label">Ton banc</div><div class="rslots" id="rbench"></div></div></div>
+      <div class="label">Boutique</div><div class="rslots" id="rshop"></div>
+      <div class="racts"><button class="btn sm" id="rReroll">Relancer la boutique · 1 pièce</button><button class="btn sm" id="rSell" disabled>Vendre</button><button class="btn green" id="rReady">Prêt</button></div>
+    </div>
+  </div>
+  <p class="panel note" id="tmsg">Chaque manche : tu achètes des créatures, tu les places, et elles se battent toutes seules. 3 fois la même = une étoile de plus. Le dernier en vie gagne.</p>
 </div>
 
 <!-- amis -->
@@ -212,5 +236,6 @@
 <script src="minigames.js"></script>
 <script src="game.js"></script>
 <script src="menus.js"></script>
+<script src="tournoi.js"></script>
 </body>
 </html>
