@@ -33,6 +33,8 @@ const FR = {
     if (!m || typeof m !== 'object' || m.t === 'ping') return;
     if (m.t === 'hi' || m.t === 'add') {
       const code = this.clean(m.code); if (!code || code === S.d.fcode) return;
+      /* l'identité vient de la connexion elle-même (adresse PeerJS), pas de ce que dit le message */
+      if (c.peer !== 'bdcf-' + code) return;
       if (c.dialed && c.fcode !== code) return;
       let f = this.friend(code);
       if (!f) {
