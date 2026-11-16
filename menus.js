@@ -362,4 +362,6 @@ function updReady(v){const el=$('#ver');el.textContent='';const b=document.creat
 if(window.BDC){BDC.info().then(i=>{$('#ver').textContent='Version '+i.version;if(i.ready)updReady(i.ready)});
   BDC.onUpdate((what,d)=>{if(what==='progress'&&!$('#ver button'))$('#ver').textContent='Téléchargement de la mise à jour… '+d+' %';if(what==='ready')updReady(d)})}
 
+/* fermer le jeu depuis le menu */
+document.querySelector('#bQuitApp').addEventListener('click',()=>{try{NET.stop()}catch(e){}window.close()});
 show('menu');

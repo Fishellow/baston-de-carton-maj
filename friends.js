@@ -17,7 +17,7 @@ const FR = {
   },
   /* ouvre mon adresse d'ami. Si ça rate (adresse encore prise juste après une relance du jeu, coupure internet…), on réessaie tout seul. */
   open() {
-    let p; try { p = this.peer = new Peer('bdcf-' + S.d.fcode, PEEROPT); } catch (e) { return this.again(); }
+    let p; try { p = this.peer = new XPeer('bdcf-' + S.d.fcode); } catch (e) { return this.again(); }
     p.on('open', () => { if (this.peer !== p) return; this.ready = true; this.dup = false; this.tries = 0; this.scan(); this.onChange(); });
     p.on('connection', c => { if (this.peer === p) this.wire(c); });
     p.on('disconnected', () => { if (this.peer !== p) return; this.ready = false; this.onChange(); this.again(); });
