@@ -6,7 +6,7 @@ let CUR='menu';
 function applyLook(){if(typeof V!=='undefined'&&V.setLook)V.setLook({halo:HALOS[S.d.use.halo].c,back:BACKS[S.d.use.back],table:TABLES[S.d.use.table],perso:{body:S.d.use.body,hat:S.d.use.hat,face:S.d.avatar}})}
 function show(id){CUR=id;document.querySelectorAll('.scr').forEach(x=>x.classList.toggle('hide',x.id!==id));$('#app').classList.add('hide');$('#modes').classList.add('hide');$('#hud').classList.remove('hide');
   applyLook();if(typeof V!=='undefined'&&V.showcase)V.showcase();SND.music('menu');
-  drawHud();if(id==='friends')drawFriends();if(id==='lobby2')drawL2();if(id==='menu')drawMenu();if(id==='shop')drawShop();if(id==='coll')drawColl();if(id==='locker')drawLocker();if(id==='story')drawStory()}
+  drawHud();if(id==='friends')drawFriends();if(id==='lobby2')drawL2();if(id==='menu')drawMenu();if(id==='shop')drawShop();if(id==='coll'){EDIT=false;const D=S.d.decks[S.d.active];if(D.auto&&PRE[D.auto]){D.cards=S.autoDeck(PRE[D.auto].o);S.save()}drawColl()}if(id==='locker')drawLocker();if(id==='story')drawStory()}
 function toast(t){const b=$('#toast');b.textContent=t;b.classList.remove('show');void b.offsetWidth;b.classList.add('show')}
 function levelUps(up){up.forEach((u,i)=>setTimeout(()=>toast('Niveau '+u.lvl+' ! '+u.txt),i*2700))}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){if(/^(menu|lobby|lobby2)$/.test(b.dataset.go)){NET.stop();l2Reset()}show(b.dataset.go)}});
@@ -56,7 +56,11 @@ function drawMenu(){const d=S.d;PROG.roll();
       ${q.done?'<div class="qr ok">'+IC('check')+'</div>':q.ready?`<button class="btn sm green" data-claim="${j}">${price(Q.r)}</button>`:`<div class="qr">${price(Q.r)}</div>`}</div>`}).join('')
     +`<div class="qfoot">Nouvelles quêtes chaque jour. Chaque quête donne aussi 30 XP.</div>`}
 $('#quests').addEventListener('click',e=>{const b=e.target.closest('[data-claim]');if(!b)return;const up=PROG.claim(+b.dataset.claim);levelUps(up);drawHud();drawMenu()});
-function myDeck(){if(S.deckOk(S.deck()))return S.deck().slice();toast('Ton deck doit avoir 20 cartes. Va dans Collection et appuie sur « Deck auto ».');return null}
+/* mon deck pour jouer : un deck automatique est refait avec mes cartes du moment, un deck incomplet est complété tout seul */
+function myDeck(){const D=S.d.decks[S.d.active];
+  if(D.auto&&PRE[D.auto]){D.cards=S.autoDeck(PRE[D.auto].o);S.save()}
+  else if(!S.deckOk(D.cards)){D.cards=S.autoDeck({keep:D.cards});S.save();if(S.deckOk(D.cards))toast('Ton deck a été complété tout seul.')}
+  if(S.deckOk(D.cards))return D.cards.slice();toast('Il te manque des cartes pour faire un deck de 20. Passe à la Boutique.');return null}
 /* les adversaires du mode libre : chacun a son terrain préféré */
 /* la tenue du perso : la mienne, celle reçue d'un autre joueur (vérifiée), ou une au hasard pour un robot */
 const cleanLook=m=>({body:m&&BODIES[m.body]?m.body:'bleu',hat:m&&HATS[m.hat]?m.hat:'aucun'});
@@ -115,53 +119,68 @@ async function openPack(p,got){
   $('#packOk').addEventListener('click',()=>{o.classList.add('hide');show('shop')},{once:true});
 }
 
-/* ---------- decks : clique une carte pour l'ajouter, « Compléter » remplit le reste, ou un deck tout fait en un clic ---------- */
+/* ---------- decks : par défaut, des decks tout faits ; « Modifier carte par carte » ouvre l'éditeur ---------- */
 const sorted=ids=>ids.slice().sort((a,b)=>C[a].c-C[b].c||C[a].n.localeCompare(C[b].n));
 const TCOL={fromage:'#ffd23f',sauce:'#e8443a',slip:'#58c48a',nuage:'#7fd4ff',pote:'#c77dff'};
 const FILTERS=[['all','Tout',()=>true],['fromage','Fromage',id=>C[id].t==='fromage'&&C[id].k==='c'],['sauce','Sauce',id=>C[id].t==='sauce'&&C[id].k==='c'],['slip','Slip',id=>C[id].t==='slip'&&C[id].k==='c'],['nuage','Nuage',id=>C[id].t==='nuage'&&C[id].k==='c'],['pote','Potes',id=>C[id].t==='pote'&&C[id].k==='c'],['spell','Sorts',id=>C[id].k==='s'],['build','Bâtiments',id=>C[id].k==='b']];
-const THEMES=[[null,'Équilibré','#fff6e0'],['fromage','Fromage',TCOL.fromage],['sauce','Sauce',TCOL.sauce],['slip','Slip',TCOL.slip],['nuage','Nuage',TCOL.nuage]];
-let FIL='all',SHOWALL=false;
+/* les decks tout faits : o = réglages donnés à S.autoDeck */
+const PRE={best:{n:'Le meilleur',x:'Tes cartes les plus fortes. Le bon choix si tu hésites.',c:'#fff6e0',o:{}},
+  rush:{n:'Rapide',x:'Des cartes pas chères pour taper dès le début.',c:'#ff9f1c',o:{style:'rush'}},
+  gros:{n:'Costaud',x:'Des grosses créatures pour écraser la fin de partie.',c:'#9b5de5',o:{style:'gros'}},
+  fromage:{n:'Fromage',x:'Ça soigne et ça encaisse.',c:TCOL.fromage,o:{t:'fromage'}},
+  sauce:{n:'Sauce',x:'Ça pique et ça explose.',c:TCOL.sauce,o:{t:'sauce'}},
+  slip:{n:'Slip',x:'Poison, épines et coups tordus.',c:TCOL.slip,o:{t:'slip'}},
+  nuage:{n:'Nuage',x:'Ça vole par-dessus les défenses.',c:TCOL.nuage,o:{t:'nuage'}}};
+let FIL='all',SHOWALL=false,EDIT=false;
+const RW={L:4,E:3,R:2,C:1};
 function drawColl(){
-  const d=S.d,D=d.decks[d.active],cnt={};D.cards.forEach(id=>cnt[id]=(cnt[id]||0)+1);
-  const own=IDS.filter(id=>d.col[id]).length,f=FILTERS.find(x=>x[0]===FIL)[2],n=D.cards.length;
-  $('#collT').textContent='MES DECKS';
+  const d=S.d,D=d.decks[d.active],cnt={};D.cards.forEach(id=>cnt[id]=(cnt[id]||0)+1);const n=D.cards.length;
+  $('#coll').classList.toggle('edit',EDIT);
   $('#tabs').innerHTML=d.decks.map((k,i)=>`<button class="tab ${i===d.active?'on':''}" data-tab="${i}">${esc(k.name)}<i class="${k.cards.length===20?'ok':''}">${k.cards.length}</i></button>`).join('');
-  $('#filters').innerHTML=FILTERS.map(x=>`<button class="chip ${x[0]===FIL?'on':''}" data-fil="${x[0]}">${TCOL[x[0]]?'<b style="background:'+TCOL[x[0]]+'"></b>':''}${x[1]}</button>`).join('');
-  document.querySelectorAll('[data-all]').forEach(b=>b.classList.toggle('on',(b.dataset.all==='1')===SHOWALL));
-  const ids=sorted(IDS.filter(id=>f(id)&&(SHOWALL||d.col[id])));
-  $('#grid').innerHTML=ids.map(id=>{const have=d.col[id]||0,max=Math.min(have,RAR[C[id].r].max),inD=cnt[id]||0;
-    return `<div class="gc ${have?'':'locked'} ${inD?'used':''} ${have&&inD>=max?'full':''}" data-add="${id}">${cardHTML(id)}
-      ${have?`<div class="pips">${Array.from({length:max},(_,i)=>`<i class="${i<inD?'on':''}"></i>`).join('')}</div>`:`<div class="pips lk">${IC('lock')}</div>`}
-      ${inD?`<button class="minus" data-rem="${id}" title="Enlever du deck">−</button>`:''}</div>`}).join('')||`<p class="dkempty">Aucune carte ici. ${SHOWALL?'':'Regarde dans « Toutes » ou dans la Boutique.'}</p>`;
+  if(!EDIT){
+    /* une grosse tuile par deck tout fait, avec ses 4 plus belles créatures */
+    $('#presets').innerHTML=Object.keys(PRE).map(k=>{const p=PRE[k],cards=S.autoDeck(p.o),stars=[...new Set(cards)].filter(id=>C[id].k==='c').sort((a,b)=>RW[C[b].r]-RW[C[a].r]||C[b].c-C[a].c).slice(0,4);
+      return `<button class="pre ${D.auto===k?'on':''}" data-pre="${k}" style="--pc:${p.c}" ${cards.length<20?'disabled':''}><b>${p.n}</b><small>${cards.length<20?'Pas encore assez de cartes.':p.x}</small>
+        <span class="prefaces">${stars.map(id=>window.PORT&&PORT[id]?'<img src="'+PORT[id]+'" alt="">':'').join('')}</span>${D.auto===k?'<em>'+IC('check')+' Choisi</em>':''}</button>`}).join('');
+  }else{
+    const f=FILTERS.find(x=>x[0]===FIL)[2];
+    $('#filters').innerHTML=FILTERS.map(x=>`<button class="chip ${x[0]===FIL?'on':''}" data-fil="${x[0]}">${TCOL[x[0]]?'<b style="background:'+TCOL[x[0]]+'"></b>':''}${x[1]}</button>`).join('');
+    document.querySelectorAll('[data-all]').forEach(b=>b.classList.toggle('on',(b.dataset.all==='1')===SHOWALL));
+    const ids=sorted(IDS.filter(id=>f(id)&&(SHOWALL||d.col[id])));
+    $('#grid').innerHTML=ids.map(id=>{const have=d.col[id]||0,max=Math.min(have,RAR[C[id].r].max),inD=cnt[id]||0;
+      return `<div class="gc ${have?'':'locked'} ${inD?'used':''} ${have&&inD>=max?'full':''}" data-add="${id}">${cardHTML(id)}
+        ${have?`<div class="pips">${Array.from({length:max},(_,i)=>`<i class="${i<inD?'on':''}"></i>`).join('')}</div>`:`<div class="pips lk">${IC('lock')}</div>`}
+        ${inD?`<button class="minus" data-rem="${id}" title="Enlever du deck">−</button>`:''}</div>`}).join('')||`<p class="dkempty">Aucune carte ici. ${SHOWALL?'':'Regarde dans « Toutes » ou dans la Boutique.'}</p>`;
+    $('#bFill').disabled=n===20;$('#bFill').textContent=n?'Compléter ('+(20-n)+')':'Remplir tout seul';
+  }
   /* la colonne de droite : mon deck */
   if(document.activeElement!==$('#dname'))$('#dname').value=D.name;
   $('#dcount').innerHTML=`<b>${n}</b> / 20`;$('#dprog').style.width=n/20*100+'%';$('#dprog').classList.toggle('ok',n===20);
-  $('#dstatus').className=n===20?'ok':'';$('#dstatus').innerHTML=n===20?IC('check')+' Prêt à jouer':n?`Il manque ${20-n} carte${20-n>1?'s':''}`:'Deck vide';
-  $('#bFill').disabled=n===20;$('#bFill').textContent=n?'Compléter ('+(20-n)+')':'Remplir tout seul';
-  $('#themes').innerHTML=THEMES.map(t=>`<button class="chip" data-theme="${t[0]||''}"><b style="background:${t[2]}"></b>${t[1]}</button>`).join('');
-  const cv=[0,0,0,0,0,0];D.cards.forEach(id=>cv[Math.min(6,Math.max(1,C[id].c))-1]++);const mx=Math.max(1,...cv);
-  $('#curve').innerHTML=cv.map((v,i)=>`<div class="cb"><span>${v||''}</span><i style="height:${v/mx*100}%"></i><b>${i===5?'6+':i+1}</b></div>`).join('');
+  $('#dstatus').className=n===20?'ok':'';$('#dstatus').innerHTML=n===20?IC('check')+(D.auto&&PRE[D.auto]?' Prêt à jouer · deck automatique « '+PRE[D.auto].n+' »':' Prêt à jouer'):n?`Il manque ${20-n} carte${20-n>1?'s':''} (complété tout seul si tu joues)`:'Deck vide : choisis-en un à gauche';
   const ty=k=>D.cards.filter(id=>C[id].k===k).length;
   $('#dtypes').textContent=`${ty('c')} créature${ty('c')>1?'s':''} · ${ty('s')} sort${ty('s')>1?'s':''} · ${ty('b')} bâtiment${ty('b')>1?'s':''}`;
   $('#dlist').innerHTML=sorted([...new Set(D.cards)]).map(id=>{const p=window.PORT&&PORT[id];
-    return `<div class="dr" data-rem="${id}" data-peek="${id}" style="--rc:${TCOL[C[id].t]||(C[id].k==='s'?'#b388ff':'#e3c594')}"><span class="dc">${C[id].c}</span>${p?'<img src="'+p+'" alt="">':'<i class="noimg"></i>'}<em>${C[id].n}</em><b>${cnt[id]>1?'×'+cnt[id]:''}</b></div>`}).join('')||'<p class="dkempty">Clique des cartes à gauche,<br>ou appuie sur « Remplir tout seul ».</p>';
+    return `<div class="dr" ${EDIT?'data-rem="'+id+'"':''} data-peek="${id}" style="--rc:${TCOL[C[id].t]||(C[id].k==='s'?'#b388ff':'#e3c594')}"><span class="dc">${C[id].c}</span>${p?'<img src="'+p+'" alt="">':'<i class="noimg"></i>'}<em>${C[id].n}</em><b>${cnt[id]>1?'×'+cnt[id]:''}</b></div>`}).join('')||'<p class="dkempty">Aucune carte pour l\'instant.</p>';
 }
 $('#coll').addEventListener('click',e=>{const d=S.d,D=d.decks[d.active];let el;
   if(el=e.target.closest('[data-fil]')){FIL=el.dataset.fil;return drawColl()}
   if(el=e.target.closest('[data-all]')){SHOWALL=el.dataset.all==='1';return drawColl()}
+  if(e.target.closest('#bEdit')){EDIT=true;return drawColl()}
+  if(e.target.closest('#bEasy')){EDIT=false;return drawColl()}
   if(el=e.target.closest('[data-tab]')){d.active=+el.dataset.tab}
-  else if(e.target.closest('#bFill')){D.cards=S.autoDeck({keep:D.cards});SND.play('quest');toast('Deck complété avec tes meilleures cartes.')}
-  else if(e.target.closest('#bClear')){D.cards=[]}
-  else if(el=e.target.closest('[data-theme]')){D.cards=S.autoDeck({t:el.dataset.theme||null});SND.play('quest');toast('Deck '+el.textContent.trim()+' prêt.')}
-  else if(el=e.target.closest('[data-rem]')){const i=D.cards.indexOf(el.dataset.rem);if(i<0)return;D.cards.splice(i,1);SND.play('click')}
+  else if(el=e.target.closest('[data-pre]')){const k=el.dataset.pre;if(el.disabled||!PRE[k])return;D.auto=k;D.cards=S.autoDeck(PRE[k].o);SND.play('quest');toast('Deck « '+PRE[k].n+' » prêt.')}
+  else if(e.target.closest('#bFill')){D.auto=null;D.cards=S.autoDeck({keep:D.cards});SND.play('quest');toast('Deck complété avec tes meilleures cartes.')}
+  else if(e.target.closest('#bClear')){D.auto=null;D.cards=[]}
+  else if(el=e.target.closest('[data-rem]')){const i=D.cards.indexOf(el.dataset.rem);if(i<0)return;D.auto=null;D.cards.splice(i,1);SND.play('click')}
   else if(el=e.target.closest('[data-add]')){const id=el.dataset.add,n=d.col[id]||0,have=D.cards.filter(x=>x===id).length;
     if(!n)return toast('Tu n\'as pas encore cette carte. Regarde dans la Boutique.');
     if(have>=Math.min(n,RAR[C[id].r].max)){const i=D.cards.indexOf(id);D.cards.splice(i,1);SND.play('click')}
     else if(D.cards.length>=20)return toast('Deck plein (20 cartes). Enlève-en une d\'abord.');
-    else{D.cards.push(id);SND.play('card')}}
+    else{D.cards.push(id);SND.play('card')}
+    D.auto=null}
   else return;
   S.save();drawColl()});
-$('#coll').addEventListener('contextmenu',e=>{const el=e.target.closest('[data-add]');if(!el)return;e.preventDefault();const D=S.d.decks[S.d.active],i=D.cards.indexOf(el.dataset.add);if(i>=0){D.cards.splice(i,1);SND.play('click');S.save();drawColl()}});
+$('#coll').addEventListener('contextmenu',e=>{const el=e.target.closest('[data-add]');if(!el)return;e.preventDefault();const D=S.d.decks[S.d.active],i=D.cards.indexOf(el.dataset.add);if(i>=0){D.auto=null;D.cards.splice(i,1);SND.play('click');S.save();drawColl()}});
 $('#dname').addEventListener('input',e=>{S.d.decks[S.d.active].name=esc(e.target.value)||'Deck';S.save();const t=$('#tabs .tab.on');if(t)t.firstChild.textContent=S.d.decks[S.d.active].name});
 /* aperçu en grand quand on survole une ligne du deck */
 $('#dlist').addEventListener('mouseover',e=>{const el=e.target.closest('[data-peek]');if(!el)return;const p=$('#peek');p.innerHTML=cardHTML(el.dataset.peek);p.classList.remove('hide');const r=el.getBoundingClientRect();p.style.top=Math.max(110,Math.min(innerHeight-300,r.top-110))+'px'});

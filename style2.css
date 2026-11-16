@@ -322,3 +322,20 @@ input{background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius
 #hand.lots .card{zoom:.75}
 #hand.many .card:hover{transform:translateY(-26px) scale(1.22);z-index:8}
 #hand.many .card.sel{transform:translateY(-32px) scale(1.22);z-index:9}
+
+/* decks tout faits */
+#coll:not(.edit) .onlyedit,#coll.edit .onlyeasy{display:none!important}
+.dkeasy{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:14px}
+.dkq{font-family:"Lilita One";font-size:26px;color:var(--ink);display:flex;flex-direction:column;gap:2px}
+.dkq small{font-family:inherit;font-family:"Nunito",sans-serif;font-weight:700;font-size:14px;opacity:.7}
+#presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.pre{position:relative;text-align:left;display:flex;flex-direction:column;gap:3px;padding:12px 14px 10px;border:3px solid var(--ink);border-left:14px solid var(--pc);border-radius:14px;background:#fff;color:var(--ink);cursor:pointer;box-shadow:0 5px 0 var(--ink);transition:transform .1s;font:inherit}
+.pre:hover{transform:translateY(-3px)}.pre:active{transform:translateY(3px);box-shadow:0 2px 0 var(--ink)}
+.pre b{font-family:"Lilita One";font-weight:400;font-size:23px}
+.pre small{font-size:13px;font-weight:700;opacity:.7;min-height:34px}
+.prefaces{display:flex;gap:2px;height:58px}.prefaces img{width:58px;height:58px;object-fit:contain}
+.pre.on{background:var(--yellow)}
+.pre em{position:absolute;top:10px;right:10px;font-style:normal;font-family:"Lilita One";font-size:13px;display:flex;align-items:center;gap:4px;background:var(--ink);color:var(--paper);border-radius:9px;padding:2px 9px 2px 6px}.pre em .ic{width:14px;height:14px}
+.pre:disabled{opacity:.5;cursor:default;box-shadow:0 5px 0 var(--ink);transform:none}
+.dkacts.onlyeasy .btn{flex:1}
+#coll:not(.edit) .dr{cursor:default}#coll:not(.edit) .dr:hover{background:#fff}#coll:not(.edit) .dr:hover em{text-decoration:none}

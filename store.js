@@ -52,7 +52,7 @@ const S={d:null,
      o.keep = cartes à garder (le reste est complété), o.t = terrain à privilégier.
      Répartition visée : 5 sorts, 2 bâtiments, le reste en créatures dont une bonne moitié pas chères. */
   autoDeck(o){o=o||{};const W={C:1,R:2,E:3.2,L:5},have=id=>Math.min(RAR[C[id].r].max,this.d.col[id]||0);
-    const score=id=>{const d=C[id];return W[d.r]+(d.k==='c'?(d.a+d.h)/Math.max(1,d.c)*.35:.6)+(o.t&&d.t===o.t?3:0)};
+    const score=id=>{const d=C[id];return W[d.r]+(d.k==='c'?(d.a+d.h)/Math.max(1,d.c)*.35:.6)+(o.t&&d.t===o.t?3:0)+(o.style==='rush'?(4-d.c)*1.3:o.style==='gros'?d.c*.9:0)};
     const out=[],n={},add=id=>{if(out.length<20&&C[id]&&(n[id]||0)<have(id)){out.push(id);n[id]=(n[id]||0)+1;return true}return false};
     for(const id of o.keep||[])add(id);
     const pool=k=>IDS.filter(id=>C[id].k===k&&have(id)).sort((a,b)=>score(b)-score(a)),cnt=k=>out.filter(id=>C[id].k===k).length;
