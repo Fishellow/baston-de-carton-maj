@@ -39,7 +39,7 @@ const S={d:null,
     d.own.avatar=(d.own.avatar||[]).filter(a=>AVATARS.includes(a));for(const a of AVATARS.slice(0,7))if(!d.own.avatar.includes(a))d.own.avatar.push(a);
     for(let l=2;l<=d.lvl;l++){const r=LEVELS[l];if(r)for(const u of [r.u,r.u2])if(u&&!d.own[u[0]].includes(u[1]))d.own[u[0]].push(u[1])}
     if(!d.own.avatar.includes(d.avatar))d.avatar='poulet';
-    d.alt=d.alt||{};d.custom=Array.isArray(d.custom)?d.custom.slice(0,8):[];if(!d.season||d.season.k!==seasonKey())d.season={k:seasonKey(),xp:0,got:0};
+    d.sh=d.sh||{};d.fa=d.fa||{};for(const id in d.alt||{}){if(d.alt[id]==='foil')d.sh[id]=1;else d.fa[id]=1}d.alt={};d.custom=Array.isArray(d.custom)?d.custom.slice(0,8):[];if(!d.season||d.season.k!==seasonKey())d.season={k:seasonKey(),xp:0,got:0};
     d.own.body=Object.keys(BODIES);d.own.hat=Object.keys(HATS);if(!BODIES[d.use.body])d.use.body='bleu';if(!HATS[d.use.hat])d.use.hat='casquette';
     /* amis : mon code (tiré une fois pour toutes) et ma liste */
     if(!/^[A-Z0-9]{6}$/.test(d.fcode||''))d.fcode=Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.random()*32|0]).join('');
@@ -53,7 +53,8 @@ const S={d:null,
   deckOk(cards){if(cards.length!==20)return false;const n={};for(const id of cards){n[id]=(n[id]||0)+1;if(!C[id]||n[id]>Math.min(RAR[C[id].r].max,this.d.col[id]||0))return false}return true},
   /* ajoute une carte ; renvoie les pièces rendues si c'est un doublon en trop */
   add(id){const r=RAR[C[id].r];if((this.d.col[id]||0)>=r.max){this.d.coins+=r.dust;return r.dust}this.d.col[id]=(this.d.col[id]||0)+1;
-    const x=Math.random(),v=x<.02?'gold':x<.1?'foil':null;if(v&&this.d.alt[id]!=='gold'&&this.d.alt[id]!==v){this.d.alt[id]=v;if(typeof toast==='function')setTimeout(()=>toast(C[id].n+' : version '+(v==='gold'?'DORÉE':'brillante')+' obtenue !'),1200)}
+    const x=Math.random();let v='';if(x<.03&&!this.d.fa[id]){this.d.fa[id]=1;v='ALTERNATIVE plein cadre'}else if(x<.11&&!this.d.sh[id]){this.d.sh[id]=1;v='SHINY'}
+    if(v&&typeof toast==='function')setTimeout(()=>toast(C[id].n+' : version '+v+' obtenue !'),1200);
     return 0},
   /* Fabrique un deck de 20 cartes avec ce que je possède.
      o.keep = cartes à garder (le reste est complété), o.t = terrain à privilégier.

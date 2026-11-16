@@ -67,6 +67,9 @@ function myDeck(){const D=S.d.decks[S.d.active];
 const cleanLook=m=>({body:m&&BODIES[m.body]?m.body:'bleu',hat:m&&HATS[m.hat]?m.hat:'aucun'});
 const myLook=()=>({body:S.d.use.body,hat:S.d.use.hat});
 const rndLook=()=>{const b=Object.keys(BODIES),h=Object.keys(HATS);return{body:b[Math.random()*b.length|0],hat:h[Math.random()*h.length|0]}};
+/* mes cartes shiny (pour que mes créatures apparaissent dans leurs autres couleurs, chez moi et chez les autres) */
+const myShiny=()=>Object.keys(S.d.sh||{}).filter(id=>C[id]).slice(0,150);
+const cleanSh=a=>Array.isArray(a)?a.filter(id=>typeof id==='string'&&C[id]).slice(0,150):[];
 const OPPS=[{n:'Roi Chaussette',f:'chaussette',t:null,ti:'Roi du panier à linge'},{n:'Mamie Fondue',f:'fondue',t:'fromage',ti:'Reine du fromage'},{n:'Chef Piment',f:'piment',t:'sauce',ti:'Ça pique'},{n:'Capitaine Slip',f:'grenouille',t:'slip',ti:'Héros du marais'},{n:'Miss Nuage',f:'licorne',t:'nuage',ti:'La tête en l\'air'}];
 function oppDeck(t){if(!t)return randomDeck();const base=randomDeck(),mine=IDS.filter(id=>C[id].t===t&&C[id].r!=='L');
   return base.map((id,i)=>i%2?mine[Math.random()*mine.length|0]:id).filter((id,i,a)=>a.slice(0,i).filter(x=>x===id).length<RAR[C[id].r].max).concat(randomDeck()).slice(0,20)}
@@ -75,7 +78,7 @@ let BET=0;
 function drawBet(){document.querySelectorAll('[data-bet]').forEach(b=>{const v=+b.dataset.bet;b.classList.toggle('on',v===BET);b.disabled=v>S.d.coins})}
 document.querySelector('.bets').addEventListener('click',e=>{const b=e.target.closest('[data-bet]');if(!b||b.disabled)return;BET=+b.dataset.bet;drawBet()});
 function startSolo(o){const d=o.mine||myDeck();if(!d)return;$('#modes').classList.add('hide');$('#hud').classList.add('hide');
-  newGame(Object.assign({mode:'solo',me:'p',seed:Math.random()*1e9|0,decks:{p:d,e:o.deck},names:{p:S.d.name,e:o.n},faces:{p:S.d.avatar,e:o.f},titles:{p:S.d.use.title,e:o.ti},looks:{p:myLook(),e:rndLook()}},o.opt))}
+  newGame(Object.assign({mode:'solo',me:'p',seed:Math.random()*1e9|0,decks:{p:d,e:o.deck},names:{p:S.d.name,e:o.n},faces:{p:S.d.avatar,e:o.f},titles:{p:S.d.use.title,e:o.ti},looks:{p:myLook(),e:rndLook()},shiny:{p:myShiny()}},o.opt))}
 $('#bPlay').addEventListener('click',()=>{drawMenu();if(BET>S.d.coins)BET=0;drawBet();$('#modes').classList.remove('hide')});
 $('#bModesX').addEventListener('click',()=>$('#modes').classList.add('hide'));
 $('#modes').addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(!b)return;const m=b.dataset.mode;
@@ -218,7 +221,7 @@ function goNet(me,seed,mine,their,them,big){
   NET.onClose=()=>{if(G&&!G.over)finish(ME,'Ton pote a quitté la partie. Victoire par abandon.')};
   const o=me==='p'?'e':'p',ti=TITLES.includes(them.title)?them.title:'';
   $('#hud').classList.add('hide');
-  newGame({mode:'net',me,seed,big:!!big,decks:{[me]:mine,[o]:their},names:{[me]:S.d.name,[o]:esc(them.name)},faces:{[me]:S.d.avatar,[o]:AVATARS.includes(them.avatar)?them.avatar:'poulet'},titles:{[me]:S.d.use.title,[o]:ti},looks:{[me]:myLook(),[o]:cleanLook(them)}})}
+  newGame({mode:'net',me,seed,big:!!big,decks:{[me]:mine,[o]:their},names:{[me]:S.d.name,[o]:esc(them.name)},faces:{[me]:S.d.avatar,[o]:AVATARS.includes(them.avatar)?them.avatar:'poulet'},titles:{[me]:S.d.use.title,[o]:ti},looks:{[me]:myLook(),[o]:cleanLook(them)},shiny:{[me]:myShiny(),[o]:cleanSh(them.sh)}})}
 /* diagnostic : le jeu arrive-t-il à joindre le serveur qui met les joueurs en relation ? (affiché dans le message d'erreur) */
 async function netProbe(){let a='?';try{const r=await fetch('https://0.peerjs.com/peerjs/id?ts='+Date.now());a=r.ok?'OK':'refus '+r.status}catch(e){a='bloqué'}
   const b=await new Promise(res=>{try{const w=new WebSocket('wss://0.peerjs.com/peerjs?key=peerjs&id=test'+Date.now()+'&token=t&version=1.5.4'),t=setTimeout(()=>{res('pas de réponse');try{w.close()}catch(e){}},6000);
@@ -228,7 +231,7 @@ const netText=e=>e&&e.type==='peer-unavailable'?'Code introuvable. Vérifie avec
 const netErr=e=>{const t=netText(e);lobbyMsg(t);if(!e||(e.type!=='peer-unavailable'&&e.type!=='unavailable-id'))netProbe().then(p=>lobbyMsg(t+' Test : '+p+'. Envoie ce message à celui qui a fait le jeu.'))};
 const rnd4=()=>Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.random()*24|0]).join('');
 const errText=e=>e&&e.type==='peer-unavailable'?'Code introuvable. Vérifie avec ton pote.':e&&e.type==='unavailable-id'?'Ce code est déjà pris, réessaie.':'Connexion impossible. Vérifie ton internet.';
-const myCard=()=>({name:S.d.name,avatar:S.d.avatar,title:S.d.use.title,fc:S.d.fcode,body:S.d.use.body,hat:S.d.use.hat});
+const myCard=()=>({name:S.d.name,avatar:S.d.avatar,title:S.d.use.title,fc:S.d.fcode,body:S.d.use.body,hat:S.d.use.hat,sh:myShiny()});
 /* duel : je crée la partie (cb reçoit le code, pour l'envoyer à un ami) ou je rejoins avec un code */
 function hostDuel(cb){const d=myDeck();if(!d)return;const code=rnd4();
   $('#code').textContent='…';lobbyMsg('Création de la partie…');
@@ -246,9 +249,9 @@ $('#bJoin').addEventListener('click',()=>{const code=$('#jcode').value.toUpperCa
 /* ---------- 2 contre 2 ----------
    4 places autour de la table : 0 et 2 font équipe (côté p), 1 et 3 aussi (côté e). L'ordre des tours est 0, 1, 2, 3. */
 const botSeats=()=>OPPS.slice().sort(()=>Math.random()-.5).map(o=>Object.assign({name:o.n,avatar:o.f,title:o.ti,deck:oppDeck(o.t),ai:true},rndLook()));
-const seatOf=(x,g)=>({deck:x.deck,name:x.name,face:x.avatar,title:x.title,look:cleanLook(x),ai:!!x.ai,g});
+const seatOf=(x,g)=>({deck:x.deck,name:x.name,face:x.avatar,title:x.title,look:cleanLook(x),sh:cleanSh(x.sh),ai:!!x.ai,g});
 const seatDefs=x=>({p:[seatOf(x[0],0),seatOf(x[2],2)],e:[seatOf(x[1],1),seatOf(x[3],3)]});
-const cleanSeat=m=>{const deck=cleanDeck(m&&m.deck);return deck?{name:esc(m.name),avatar:AVATARS.includes(m.avatar)?m.avatar:'poulet',title:TITLES.includes(m.title)?m.title:'',deck,ai:!!m.ai,fc:FR.clean(m.fc),body:cleanLook(m).body,hat:cleanLook(m).hat}:null};
+const cleanSeat=m=>{const deck=cleanDeck(m&&m.deck);return deck?{name:esc(m.name),avatar:AVATARS.includes(m.avatar)?m.avatar:'poulet',title:TITLES.includes(m.title)?m.title:'',deck,ai:!!m.ai,fc:FR.clean(m.fc),body:cleanLook(m).body,hat:cleanLook(m).hat,sh:cleanSh(m.sh)}:null};
 /* tout seul : moi + un robot contre deux robots */
 function startSolo2(){const d=myDeck();if(!d)return;$('#modes').classList.add('hide');$('#hud').classList.add('hide');const b=botSeats();
   newGame({mode:'solo',me:'p',seat:0,seed:Math.random()*1e9|0,big:true,seats:seatDefs([Object.assign({deck:d},myCard()),b[0],b[1],b[2]])})}
@@ -314,7 +317,7 @@ $('#b2Host').addEventListener('click',()=>host2());
 $('#b2Join').addEventListener('click',()=>{const code=$('#j2code').value.toUpperCase().replace(/[^A-Z]/g,'');if(code.length!==4)return l2Msg('Le code fait 4 lettres.');join2(code)});
 $('#b2Swap').addEventListener('click',()=>{if(!L2.host)return;const[a,b,c]=[L2.slots[1],L2.slots[2],L2.slots[3]];L2.slots[1]=c;L2.slots[2]=a;L2.slots[3]=b;L2.slots.forEach((x,g)=>{if(x&&x.conn)x.conn.g=g});SND.play('click');l2Roster()});
 $('#b2Go').addEventListener('click',()=>{if(!L2.host||!L2.code)return;const bots=botSeats(),seed=Math.random()*1e9|0;
-  const seats=L2.slots.map(x=>x?{name:x.name,avatar:x.avatar,title:x.title,deck:x.deck,ai:false,body:x.body,hat:x.hat}:bots.pop());
+  const seats=L2.slots.map(x=>x?{name:x.name,avatar:x.avatar,title:x.title,deck:x.deck,ai:false,body:x.body,hat:x.hat,sh:x.sh}:bots.pop());
   NET.conns.forEach(c=>NET.to(c,{t:'start2',seed,seats,you:c.g}));goNet2(0,seed,seats,true)});
 $('#l2friends').addEventListener('click',e=>{const b=e.target.closest('[data-inv2]');if(!b||!L2.code)return;const f=FR.friend(b.dataset.inv2);
   if(f&&FR.invite(f.code,'2v2',L2.code)){b.disabled=true;b.textContent='Invité';toast('Invitation envoyée à '+f.name+'.')}});

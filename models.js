@@ -90,12 +90,16 @@ const photoTex={};if(typeof C!=='undefined')ready=Promise.all([ready,...Object.k
 const dec=(s,A)=>{const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return new A(u.buffer)};
 function bbGeom(n){if(n._g)return n._g;const p=dec(n.p,Int16Array),f=new Float32Array(p.length);for(let i=0;i<p.length;i++)f[i]=p[i]/64;const g=new T3.BufferGeometry();
   g.setAttribute('position',new T3.BufferAttribute(f,3));g.setAttribute('normal',new T3.BufferAttribute(dec(n.nm,Int8Array),3,true));g.setAttribute('uv',new T3.BufferAttribute(dec(n.uv,Uint16Array),2,true));g.setIndex(new T3.BufferAttribute(dec(n.ix,Uint16Array),1));return n._g=g}
-function bb(id){const d=BB[id],fill=mat(0xffffff,bbTex[id]),out=outMat(),root=new T3.Group(),bones={};root.scale.setScalar(1/16);
+/* shiny : la même texture avec les couleurs décalées */
+const shTex={};let SHN=false;
+function shinyTex(id){if(shTex[id])return shTex[id];const b=bbTex[id],im=b.image;if(!im||!im.width)return b;const cv=document.createElement('canvas');cv.width=im.width;cv.height=im.height;const x=cv.getContext('2d');x.filter='hue-rotate(150deg) saturate(1.35)';x.drawImage(im,0,0);
+  const t=new T3.CanvasTexture(cv);t.flipY=b.flipY;t.colorSpace=b.colorSpace;t.generateMipmaps=false;t.minFilter=t.magFilter=T3.LinearFilter;return shTex[id]=t}
+function bb(id){const d=BB[id],fill=mat(0xffffff,SHN?shinyTex(id):bbTex[id]),out=outMat(),root=new T3.Group(),bones={};root.scale.setScalar(1/16);
   const R=(o,r)=>{o.rotation.order='ZYX';o.rotation.set(r[0]*PI/180,r[1]*PI/180,r[2]*PI/180)};
   const walk=(n,par,po)=>{const o=n.c?new T3.Group():new T3.Mesh(bbGeom(n),fill);o.position.set(n.o[0]-po[0],n.o[1]-po[1],n.o[2]-po[2]);R(o,n.r);par.add(o);
     if(n.c){bones[n.n]=o;o.userData.rest=o.rotation.clone();n.c.forEach(k=>walk(k,o,n.o))}else o.add(new T3.Mesh(o.geometry,out))};
   d.root.forEach(n=>walk(n,root,[0,0,0]));cur.add(root);return bones}
-return{build(id,tint){const g=new T3.Group();U={uTint:{value:new T3.Color(tint)},uTime:{value:0},uReveal:{value:0},uBaseY:{value:0},uFlash:{value:0},uHolo:{value:1},uOut:{value:.026}};cur=g;
+return{build(id,tint,sh){SHN=!!sh;const g=new T3.Group();U={uTint:{value:new T3.Color(tint)},uTime:{value:0},uReveal:{value:0},uBaseY:{value:0},uFlash:{value:0},uHolo:{value:1},uOut:{value:.026}};cur=g;
   let bones=null;if(window.BB&&BB[id]){bones=bb(id);
     /* la photo du pote, posée sur l'os « photo » du modèle */
     const d=typeof C!=='undefined'&&C[id];if(d&&d.img)for(const n in bones)if(n.startsWith('photo')){const sc=+(n.split('@')[1]||1),tex=photoTex[id];const g0=cur;cur=bones[n];mesh(geo.plane,W,0,0,0,9.3*sc,10.1*sc,1,0,0,0,tex);cur=g0}}else (D[id]||(()=>{sph(0xff66cc,0,.5,0,.8);eyes(.6,.36)}))();

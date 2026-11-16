@@ -407,11 +407,22 @@ input{background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius
 #mate div{display:grid;grid-template-columns:repeat(2,auto);gap:8px;zoom:.6;width:max-content}
 #mate .card.no{filter:grayscale(.7) brightness(.85)}
 
-/* cartes alternatives */
-.card.alt-foil::after,.card.alt-gold::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:4;background:linear-gradient(115deg,transparent 22%,#ff5cf055 36%,#5cf0ff66 50%,#f0ff5c55 64%,transparent 78%);background-size:260% 260%;mix-blend-mode:screen;animation:foil 3.2s linear infinite}
-.card.alt-gold{box-shadow:0 0 0 4px #ffc933,0 0 20px 3px #ffc933aa}
-.card.alt-gold::after{background:linear-gradient(115deg,transparent 25%,#fff3b0aa 45%,#ffc93399 55%,transparent 75%);background-size:260% 260%;animation-duration:2.2s}
-.card.alt-gold .port{filter:drop-shadow(0 0 5px #ffc933) saturate(1.25)}
+/* carte shiny : le personnage change de couleur, petites étoiles */
+.card.alt-shiny .art img.port{filter:hue-rotate(150deg) saturate(1.35) drop-shadow(0 3px 0 #1b103533)}
+.card.alt-shiny::before{content:"✦  ✦";position:absolute;top:26px;left:0;right:0;text-align:center;letter-spacing:38px;text-indent:38px;font-size:13px;color:#fff;text-shadow:0 0 6px #fff,0 0 2px #ffd23f;z-index:4;pointer-events:none;animation:twinkle 1.6s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+/* carte alternative « plein cadre » : le personnage occupe toute la carte, le nom et le texte sont posés dessus */
+.card.alt-full{padding:0;border-color:#ffc933;box-shadow:0 4px 0 var(--ink),inset 0 0 0 2px #fff6}
+.card.alt-full .art{position:absolute;inset:0;height:auto;border:none;border-radius:0;background:radial-gradient(circle at 50% 38%,#fffd 0 18%,#fff5 19% 42%,transparent 70%),repeating-conic-gradient(from 0deg at 50% 38%,#ffffff2e 0 9deg,transparent 9deg 18deg)}
+.card.alt-full .art img.port{object-fit:contain;object-position:50% 30%;transform:scale(1.42) translateY(-4%);filter:drop-shadow(0 4px 0 #1b103566)}
+.card.alt-full.alt-shiny .art img.port{filter:hue-rotate(150deg) saturate(1.35) drop-shadow(0 4px 0 #1b103566)}
+.card.alt-full .nm{position:absolute;left:0;right:0;bottom:31px;z-index:2;min-height:0;padding:9px 6px 2px;font-size:13.5px;color:#fff;text-shadow:0 2px 0 var(--ink),1px 0 0 var(--ink),-1px 0 0 var(--ink),0 -1px 0 var(--ink);background:linear-gradient(transparent,#1b1035b8)}
+.card.alt-full .tx{position:absolute;left:0;right:0;bottom:0;height:31px;flex:none;z-index:2;margin:0;border-radius:0;background:#1b1035d9;color:#fff;font-size:7.6px;line-height:1.05;padding:2px 24px}
+.card.alt-full .tx.long,.card.alt-full .tx.xlong{font-size:6.6px}
+.card.alt-full .tx .kd{display:none}
+.card.alt-full .rar{display:none}
+.card.alt-full .gem,.card.alt-full .st{z-index:3}
+.card.alt-full::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;background:linear-gradient(115deg,transparent 30%,#ffffff55 48%,transparent 62%);background-size:260% 260%;animation:foil 3.6s linear infinite}
 @keyframes foil{from{background-position:120% 0}to{background-position:-140% 0}}
 /* saison */
 .season{margin-top:10px;border-top:3px dashed #2a1b3d44;padding-top:10px;display:flex;flex-direction:column;gap:5px}

@@ -136,11 +136,11 @@ addEventListener('resize',fit);
 function newGame(o){
   MODE=o.mode;ME=o.me;MYSEAT=o.seat|0;AIRUN=o.mode==='solo'||!!o.host;LOCK=false;MGBUSY=false;NL=o.big?6:4;const R=rng(o.seed),O=opp(ME),hp=o.auto?12:o.seats?40:o.big?30:20;
   /* les sièges : 1 par côté en duel, 2 en 2 contre 2. g = numéro du joueur à la table (0 à 3), ai = joué par le robot */
-  const defs=o.seats||{p:[{deck:o.decks.p,name:o.names.p,face:o.faces.p,title:o.titles&&o.titles.p,look:o.looks&&o.looks.p,g:0}],e:[{deck:o.decks.e,name:o.names.e,face:o.faces.e,title:o.titles&&o.titles.e,look:o.looks&&o.looks.e,g:1,ai:o.mode==='solo'}]};
+  const defs=o.seats||{p:[{deck:o.decks.p,name:o.names.p,face:o.faces.p,title:o.titles&&o.titles.p,look:o.looks&&o.looks.p,sh:o.shiny&&o.shiny.p,g:0}],e:[{deck:o.decks.e,name:o.names.e,face:o.faces.e,title:o.titles&&o.titles.e,look:o.looks&&o.looks.e,sh:o.shiny&&o.shiny.e,g:1,ai:o.mode==='solo'}]};
   MYG=defs[ME][MYSEAT].g|0;
   const terrs=()=>{if(o.auto)return['fromage','sauce','slip','nuage'];const t=shuffle(['fromage','sauce','slip','nuage'],R);return NL>4?shuffle(t.concat(shuffle(['fromage','sauce','slip','nuage'],R).slice(0,NL-4)),R):t};
   const mk=(ds,hp)=>{const P={hp,maxHp:hp,rage:0,cur:0,started:false,lanes:Array(NL).fill(null),bld:Array(NL).fill(null),terr:terrs(),
-      seats:ds.map(d=>({name:d.name,face:d.face,look:d.look||null,title:d.title||'',ai:!!d.ai,g:d.g|0,energy:0,maxE:1,powUsed:false,deck:shuffle(d.deck.slice(),R),hand:[]}))};
+      seats:ds.map(d=>({name:d.name,face:d.face,look:d.look||null,sh:d.sh||[],title:d.title||'',ai:!!d.ai,g:d.g|0,energy:0,maxE:1,powUsed:false,deck:shuffle(d.deck.slice(),R),hand:[]}))};
     for(const k of['energy','maxE','powUsed','deck','hand'])Object.defineProperty(P,k,{get(){return this.seats[this.cur][k]},set(v){this.seats[this.cur][k]=v}});return P};
   const p=mk(defs.p,hp),e=mk(defs.e,o.hpE||hp),view=k=>({get p(){return p.seats[p.cur][k]},get e(){return e.seats[e.cur][k]}});
   G={p,e,names:view('name'),faces:view('face'),titles:view('title'),two:p.seats.length>1,active:null,sel:null,busy:true,over:false,uid:0,capE:o.big?8:7,big:!!o.big,story:o.story,turn:0,phase:'',bet:o.bet|0,R:rng(o.seed^0x2f6e2b1)};
@@ -190,7 +190,7 @@ async function playCard(s,i,l,q){
   G.busy=true;G.sel=null;P.hand.splice(i,1);P.energy-=d.c;
   log((iAm(s)?'Tu joues ':G.names[s]+' joue ')+d.n,s);
   if(d.k==='c'){
-    const u=mkUnit(id),b=bld(s,l);
+    const u=mkUnit(id),b=bld(s,l);u.sh=(P.seats[P.cur].sh||[]).includes(id);
     /* fusion : posée sur une de mes créatures, la nouvelle garde son pouvoir et additionne les forces */
     if(old){u.atk+=old.atk;u.hp+=old.hp;u.max+=old.max;u.shield+=old.shield;u.fused=true;if(d.fusionBonus){u.atk+=2;u.hp+=2;u.max+=2}log('Fusion : '+C[old.id].n+' + '+d.n,s,'ko')}
     if(b&&b.arriveShield)u.shield+=b.arriveShield;
