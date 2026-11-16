@@ -270,3 +270,46 @@ input{background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius
 .dr img,.dr .noimg{width:30px;height:30px;object-fit:contain;flex:none}.dr em{font-style:normal;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dr b{font-family:"Lilita One";font-weight:400}
 #peek{position:fixed;right:360px;z-index:40;pointer-events:none;height:auto;display:block;transform:scale(1.5);transform-origin:right top}
+
+/* ---------- amis, 2 contre 2 ---------- */
+.mrow{grid-template-columns:repeat(5,1fr);width:min(780px,94vw)}
+.modes{grid-template-columns:repeat(4,1fr)}
+#frTag{display:none;position:absolute;top:-10px;right:-8px;font-style:normal;font-family:"Lilita One";font-size:12px;background:var(--green);color:var(--ink);border:3px solid var(--ink);border-radius:9px;padding:1px 7px}#frTag.show{display:block}
+.topr{display:flex;gap:8px;justify-content:flex-end}
+.frwrap{display:flex;gap:18px;width:min(980px,100%);align-items:flex-start;justify-content:center;flex-wrap:wrap}
+.frme{width:300px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.frme p{margin:0}.frme .label{margin-top:6px}
+#fcode{font-family:"Lilita One";font-size:44px;letter-spacing:5px;color:var(--red);line-height:1;user-select:all}
+#fadd,#j2code{font-family:"Lilita One";font-size:26px;letter-spacing:4px;text-align:center;width:210px;text-transform:uppercase}
+#frmsg{min-height:34px;font-weight:700}
+.frlist{flex:1;min-width:380px;max-width:620px;padding:16px;display:flex;flex-direction:column;gap:8px;max-height:64vh;overflow:auto}
+#flist,#l2friends{display:flex;flex-direction:column;gap:8px}
+.fr{display:flex;align-items:center;gap:10px;padding:6px 8px;border:3px solid var(--ink);border-radius:12px;background:#fff}
+.fr .face,.l2seat .face,#invite .face{width:44px;height:44px;border-radius:50%;border:3px solid var(--ink);background:#ffe9a8;overflow:hidden;flex:none;display:grid;place-items:center;position:relative}
+.fr .face .fimg,.l2seat .face .fimg,#invite .face .fimg{width:100%;height:100%;object-fit:cover}
+.fr:not(.on) .face{filter:grayscale(1);opacity:.6}
+.frn{flex:1;min-width:0;display:flex;flex-direction:column;text-align:left;line-height:1.15}
+.frn b{font-family:"Lilita One";font-weight:400;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.frn small{font-size:12px;font-weight:700;opacity:.65}.fr.on .frn small{color:#2f8f5b;opacity:1}
+.frx{width:28px;height:28px;border-radius:50%;border:3px solid var(--ink);background:var(--paper);color:var(--ink);font-family:"Lilita One";font-size:17px;line-height:1;cursor:pointer;padding:0;flex:none}
+.frx:hover{background:var(--red);color:#fff}
+#invite{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:12px;padding:10px 14px;min-width:340px;box-shadow:0 8px 0 var(--ink)}
+#invite.hide{display:none}
+.l2room{display:flex;gap:18px;width:min(980px,100%);align-items:flex-start;justify-content:center;flex-wrap:wrap}
+.l2room.hide,#l2start.hide,#l2acts.hide{display:none}
+.l2main{flex:1;min-width:420px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.l2code{font-weight:700;display:flex;align-items:center;gap:12px}
+#code2{font-family:"Lilita One";font-weight:400;font-size:40px;letter-spacing:5px;color:var(--red);line-height:1}
+.l2teams{display:flex;align-items:center;gap:14px;width:100%}
+.l2team{flex:1;display:flex;flex-direction:column;gap:8px}
+.l2vs{font-style:normal;font-family:"Lilita One";font-size:26px;color:var(--red)}
+.l2seat{display:flex;align-items:center;gap:10px;padding:7px 9px;border:3px solid var(--ink);border-radius:12px;background:#fff;text-align:left}
+.l2seat b{font-family:"Lilita One";font-weight:400;font-size:17px;display:block}.l2seat small{font-size:12px;font-weight:700;opacity:.65}
+.l2seat.me{background:var(--yellow)}
+.l2seat.bot{border-style:dashed;background:none;opacity:.7}
+.l2acts{display:flex;gap:10px;align-items:center}
+.l2side{width:290px;padding:16px;display:flex;flex-direction:column;gap:8px}
+/* en partie : les deux coéquipiers, celui qui joue est surligné */
+.mates{display:flex;gap:5px;margin:2px 0}
+.mates i{font-style:normal;font-size:11px;font-weight:700;padding:1px 7px;border:2px solid var(--ink);border-radius:8px;background:var(--paper);opacity:.55}
+.mates i.on{background:var(--yellow);opacity:1}

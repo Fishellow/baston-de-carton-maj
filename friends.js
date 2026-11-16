@@ -1,0 +1,65 @@
+/* Amis : chacun a un code ami (6 caractères, gardé dans la sauvegarde). Tant que le jeu est ouvert, il est joignable
+   à cette adresse (PeerJS). On voit qui est en ligne et on peut inviter en duel ou en 2 contre 2.
+   Rien ne passe par un serveur à nous : les jeux se parlent directement. Seuls le pseudo, l'avatar et le code ami sont échangés. */
+const FR = {
+  peer: null, links: {}, ready: false, dup: false, onChange: () => { }, onInvite: () => { },
+  ABC: 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789',
+  clean(c) { c = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return c.length === 6 ? c : null; },
+  me() { return { code: S.d.fcode, name: S.d.name, avatar: S.d.avatar }; },
+  friend(code) { return S.d.friends.find(f => f.code === code); },
+  online(code) { const c = this.links[code]; return !!(c && c.open); },
+  start() {
+    if (typeof Peer === 'undefined' || this.peer) return;
+    try { this.peer = new Peer('bdcf-' + S.d.fcode); } catch (e) { return; }
+    this.peer.on('open', () => { this.ready = true; this.dup = false; this.scan(); this.onChange(); });
+    this.peer.on('connection', c => this.wire(c));
+    this.peer.on('disconnected', () => { this.ready = false; this.onChange(); setTimeout(() => { try { if (this.peer && !this.peer.destroyed) this.peer.reconnect(); } catch (e) { } }, 4000); });
+    /* « peer-unavailable » = cet ami n'est pas en ligne : rien à faire. « unavailable-id » = le jeu est déjà ouvert ailleurs avec mon code. */
+    this.peer.on('error', e => { if (e && e.type === 'unavailable-id') { this.dup = true; this.ready = false; this.onChange(); } });
+    setInterval(() => this.scan(), 15000);
+    setInterval(() => { for (const k in this.links) { const c = this.links[k]; if (c.open) { try { c.send({ t: 'ping' }); } catch (e) { } if (Date.now() - c.last > 40000) this.drop(c); } } }, 10000);
+  },
+  /* essaie de joindre les amis pas encore connectés */
+  scan() { if (!this.ready || !this.peer || this.peer.disconnected) return; for (const f of S.d.friends) if (!this.links[f.code]) this.dial(f.code, !!f.pend); },
+  dial(code, first) { if (!this.ready) return false; const c = this.peer.connect('bdcf-' + code, { reliable: true }); c.fcode = code; c.dialed = true; c.first = !!first; this.wire(c); return true; },
+  wire(c) {
+    c.last = Date.now();
+    c.on('open', () => { c.last = Date.now(); if (c.dialed) c.send(Object.assign({ t: c.first ? 'add' : 'hi' }, this.me())); });
+    c.on('data', m => { c.last = Date.now(); this.data(c, m); });
+    c.on('close', () => this.drop(c)); c.on('error', () => this.drop(c));
+  },
+  drop(c) { try { c.close(); } catch (e) { } if (c.fcode && this.links[c.fcode] === c) { delete this.links[c.fcode]; this.onChange(); } },
+  data(c, m) {
+    if (!m || typeof m !== 'object' || m.t === 'ping') return;
+    if (m.t === 'hi' || m.t === 'add') {
+      const code = this.clean(m.code); if (!code || code === S.d.fcode) return;
+      if (c.dialed && c.fcode !== code) return;
+      let f = this.friend(code);
+      if (!f) {
+        /* un inconnu : on ne l'ajoute que s'il le demande (ou si c'est moi qui viens de l'ajouter) */
+        if (m.t !== 'add' && !c.first) { try { c.close(); } catch (e) { } return; }
+        if (S.d.friends.length >= 30) return;
+        f = { code, name: 'Pote', avatar: 'poulet' }; S.d.friends.push(f);
+        if (typeof toast === 'function') toast(esc(m.name) + ' est maintenant ton ami.');
+      }
+      delete f.pend; f.name = esc(m.name); f.avatar = AVATARS.includes(m.avatar) ? m.avatar : 'poulet'; S.save();
+      if (!c.dialed) { c.fcode = code; if (!c.greeted) { c.greeted = true; c.send(Object.assign({ t: 'hi' }, this.me())); } }
+      this.links[code] = c; this.onChange(); return;
+    }
+    const f = c.fcode && this.friend(c.fcode); if (!f || this.links[c.fcode] !== c) return;
+    if (m.t === 'invite') { const room = String(m.room || ''); if (!/^[A-Z]{4}$/.test(room)) return; this.onInvite(f, m.mode === '2v2' ? '2v2' : '1v1', room, c); }
+    else if (m.t === 'no') toast(f.name + ' a refusé l\'invitation.');
+    else if (m.t === 'busy') toast(f.name + ' est déjà en partie.');
+  },
+  add(code) {
+    code = this.clean(code); if (!code) return 'Un code ami fait 6 caractères.';
+    if (code === S.d.fcode) return 'C\'est ton propre code.';
+    if (this.friend(code)) return 'Déjà dans ta liste.';
+    if (S.d.friends.length >= 30) return 'Ta liste est pleine (30 amis).';
+    S.d.friends.push({ code, name: 'Pote ' + code.slice(0, 3), avatar: 'poulet', pend: 1 }); S.save();
+    if (this.ready) this.dial(code, true); this.onChange(); return '';
+  },
+  remove(code) { S.d.friends = S.d.friends.filter(f => f.code !== code); S.save(); const c = this.links[code]; if (c) this.drop(c); this.onChange(); },
+  invite(code, mode, room) { const c = this.links[code]; if (!c || !c.open) return false; c.send({ t: 'invite', mode, room }); return true; },
+  reply(c, t) { try { if (c && c.open) c.send({ t }); } catch (e) { } },
+};

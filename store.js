@@ -32,6 +32,9 @@ const S={d:null,
     d.own.avatar=(d.own.avatar||[]).filter(a=>AVATARS.includes(a));for(const a of AVATARS.slice(0,7))if(!d.own.avatar.includes(a))d.own.avatar.push(a);
     for(let l=2;l<=d.lvl;l++){const r=LEVELS[l];if(r)for(const u of [r.u,r.u2])if(u&&!d.own[u[0]].includes(u[1]))d.own[u[0]].push(u[1])}
     if(!d.own.avatar.includes(d.avatar))d.avatar='poulet';
+    /* amis : mon code (tiré une fois pour toutes) et ma liste */
+    if(!/^[A-Z0-9]{6}$/.test(d.fcode||''))d.fcode=Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.random()*32|0]).join('');
+    d.friends=Array.isArray(d.friends)?d.friends.filter(f=>f&&/^[A-Z0-9]{6}$/.test(f.code||'')).slice(0,30):[];
     if(!d.gotB){d.col.cabane=d.col.cabane||1;d.col.fromagerie=d.col.fromagerie||1;d.gotB=1}
     for(const id in d.col)if(!C[id])delete d.col[id];
     d.decks.forEach(k=>{k.cards=k.cards.filter(id=>C[id]);for(const id of STARTER){if(k.cards.length>=20)break;if(k.cards.filter(x=>x===id).length<Math.min(RAR[C[id].r].max,d.col[id]||0))k.cards.push(id)}});

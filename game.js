@@ -1,10 +1,15 @@
 /* Le duel : règles + affichage du plateau. Les côtés sont 'p' (hôte) et 'e' (2e joueur / robot).
+   2 contre 2 : chaque côté a 2 sièges (G[s].seats) qui jouent à tour de rôle. Plateau, PV et rage sont à l'équipe ;
+   main, pioche et énergie sont au joueur dont c'est le tour (G[s].hand, .deck, .energy pointent sur le siège en cours, G[s].cur).
    Deux tables : classique (4 couloirs, 20 PV) et Grande Baston (6 couloirs, 30 PV, un quartier général par joueur). NL = nombre de couloirs (cards.js).
    Tour : événement de table (tous les 3 tours) → choix « 2 cartes » ou « 1 carte + 1 énergie » → cartes, pouvoir de héros, rage → baston.
    Tout ce qui est tiré au hasard dans les règles passe par G.R (le même tirage chez les deux joueurs en ligne). */
 const $=s=>document.querySelector(s), sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const opp=s=>s==='p'?'e':'p';
-let G=null,ME='p',MODE='solo',Q=Promise.resolve(),LOCK=false,MGBUSY=false;
+let G=null,ME='p',MYSEAT=0,MYG=0,AIRUN=true,MODE='solo',Q=Promise.resolve(),LOCK=false,MGBUSY=false;
+/* est-ce à moi (et pas à mon coéquipier) de jouer ? */
+const myTurn=()=>!!G&&G.active===ME&&G[ME].cur===MYSEAT;
+const iAm=s=>s===ME&&G[ME].cur===MYSEAT;
 const RAGE_MAX=10,POW_COST=2;
 function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const shuffle=(a,R)=>{for(let i=a.length-1;i>0;i--){const j=R()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
@@ -55,14 +60,14 @@ const atkOf=(s,l)=>{const c=G[s].lanes[l],b=bld(s,l);return c.atk+(C[c.id].t===G
 /* ---------- pouvoir de héros, rage, choix de début de tour ---------- */
 function canPower(s){const P=G[s];if(P.powUsed||P.energy<POW_COST||G.phase!=='main')return false;return powerOf(G.faces[s])!=='shield'||P.lanes.some(c=>c&&!c.shield)}
 async function doPower(s){if(!canPower(s))return;const P=G[s],o=opp(s),k=powerOf(G.faces[s]);G.busy=true;P.energy-=POW_COST;P.powUsed=true;
-  log((s===ME?'Tu utilises ':G.names[s]+' utilise ')+POWERS[k].n,s);banner(POWERS[k].n.toUpperCase());SND.play('spell');render();await sleep(600);
+  log((iAm(s)?'Tu utilises ':G.names[s]+' utilise ')+POWERS[k].n,s);banner(POWERS[k].n.toUpperCase());SND.play('spell');render();await sleep(600);
   if(k==='draw')await draw(s);
   else if(k==='dmg')await hurtH(o,1);
   else if(k==='heal')healH(s,2);
   else{let best=-1,bl=-1;P.lanes.forEach((c,l)=>{if(c&&!c.shield&&c.atk>best){best=c.atk;bl=l}});if(bl>=0)shieldC(s,bl,1)}
   await sleep(300);if(!G.over){G.busy=false;render()}}
 async function doRage(s){const P=G[s],o=opp(s);if(P.rage<RAGE_MAX||G.phase!=='main')return;G.busy=true;P.rage=0;
-  log((s===ME?'Tu exploses de rage !':G.names[s]+' explose de rage !'),s,'ko');banner('RAGE !');SND.play('legend');V.quake(.7);render();await sleep(700);
+  log((iAm(s)?'Tu exploses de rage !':G.names[s]+' explose de rage !'),s,'ko');banner('RAGE !');SND.play('legend');V.quake(.7);render();await sleep(700);
   for(let l=0;l<NL&&!G.over;l++)if(G[o].lanes[l])await hurt(o,l,2);
   await each(s,(c,l)=>{c.atk++;float(slot(s,l),'+1 attaque','g')});
   await sleep(300);if(!G.over){G.busy=false;render()}}
@@ -83,7 +88,7 @@ async function tableEvent(){const e=EVENTS[G.R()*EVENTS.length|0];log('Événeme
 
 /* ---------- affichage ---------- */
 const slot=(s,l)=>({getBoundingClientRect:()=>V.rect(s,l)});
-function okFor(s,l){if(!G||G.busy||G.over||G.active!==ME||G.phase!=='main'||G.sel==null)return false;const sel=C[G[ME].hand[G.sel]],c=G[s].lanes[l],b=G[s].bld[l];
+function okFor(s,l){if(!G||G.busy||G.over||!myTurn()||G.phase!=='main'||G.sel==null)return false;const sel=C[G[ME].hand[G.sel]],c=G[s].lanes[l],b=G[s].bld[l];
   return sel.k==='c'?s===ME&&!(c&&c.fused):sel.k==='b'?s===ME&&!(b&&C[b.id].qg):sel.tgt==='enemy'?s!==ME&&!!c:sel.tgt==='ally'?s===ME&&!!c:sel.tgt==='ebld'?s!==ME&&!!b:false}
 const terrHTML=t=>`<div class="tinfo panel"><b>${T[t].n}</b><span>Une créature du même terrain posée ici gagne +1 attaque.</span></div>`;
 function render(){
@@ -93,21 +98,22 @@ function render(){
   for(const s of ['e','p']){
     const P=G[s];
     $('#hero-'+s).innerHTML=`<div class="face">${faceHTML(G.faces[s])}</div>
-      <div class="hinfo"><b>${G.names[s]}</b><div class="small">${G.titles&&G.titles[s]?G.titles[s]+' · ':''}Pioche ${P.deck.length}</div>
+      <div class="hinfo"><b>${G.names[s]}</b>${P.seats.length>1?`<div class="mates">${P.seats.map((x,i)=>`<i class="${i===P.cur?'on':''}">${x.name}</i>`).join('')}</div>`:''}<div class="small">${P.seats.length<2&&G.titles[s]?G.titles[s]+' · ':''}Pioche ${P.deck.length}</div>
         <div class="rage ${P.rage>=RAGE_MAX?'full':''}" title="Rage"><i style="width:${P.rage/RAGE_MAX*100}%"></i></div></div>
       ${s!==ME?`<div id="ehand">${'<i></i>'.repeat(P.hand.length)}</div>`:''}
       <div class="nrj" title="Énergie">${Array.from({length:Math.max(P.maxE,P.energy)},(_,i)=>`<i class="${i<P.energy?'on':''}"></i>`).join('')}</div>
       <div class="hp">${IC('heart')}<b>${Math.max(0,P.hp)}</b></div>`;
   }
-  const mine=G.active===ME&&!G.busy&&!G.over,myTurn=mine&&G.phase==='main',H=G[ME],pk=powerOf(G.faces[ME]);
-  $('#hand').innerHTML=H.hand.map((id,i)=>cardHTML(id,null,false,(i===G.sel?'sel ':'')+(C[id].c>H.energy?'no':''))).join('');
-  $('#hand').classList.toggle('many',H.hand.length>5);
+  const mine=myTurn()&&!G.busy&&!G.over,myMain=mine&&G.phase==='main',H=G[ME],MS=H.seats[MYSEAT],pk=powerOf(MS.face);
+  /* ma main à moi, même pendant le tour de mon coéquipier */
+  $('#hand').innerHTML=MS.hand.map((id,i)=>cardHTML(id,null,false,(mine&&i===G.sel?'sel ':'')+(C[id].c>MS.energy?'no':''))).join('');
+  $('#hand').classList.toggle('many',MS.hand.length>5);
   [...$('#hand').children].forEach((el,i)=>el.dataset.i=i);
-  $('#go').disabled=!myTurn;
-  $('#pow').disabled=!myTurn||!canPower(ME);$('#pow').innerHTML=`${POWERS[pk].n}<small>${POWERS[pk].x} · 2 énergies</small>`;
-  $('#rage').classList.toggle('hide',H.rage<RAGE_MAX);$('#rage').disabled=!myTurn;
+  $('#go').disabled=!myMain;
+  $('#pow').disabled=!myMain||!canPower(ME);$('#pow').innerHTML=`${POWERS[pk].n}<small>${POWERS[pk].x} · 2 énergies</small>`;
+  $('#rage').classList.toggle('hide',H.rage<RAGE_MAX);$('#rage').disabled=!myMain;
   $('#choice').classList.toggle('hide',!(mine&&G.phase==='choice'));
-  if(!G.over)$('#hint').textContent=!mine?(G.active&&G.active!==ME?G.names[opp(ME)]+' réfléchit…':'…'):G.phase==='choice'?'Début de tour : choisis ton bonus.':
+  if(!G.over)$('#hint').textContent=!mine?(G.active&&!myTurn()?G.names[G.active]+(G.active===ME?' (ton coéquipier) joue…':' réfléchit…'):'…'):G.phase==='choice'?'Début de tour : choisis ton bonus.':
     G.sel==null?'Choisis une carte, puis lance la baston.':
     (()=>{const d=C[H.hand[G.sel]];return d.k==='c'?'Choisis un couloir. Sur une de tes créatures : fusion.':d.k==='b'?'Choisis un de tes couloirs pour construire':d.tgt==='enemy'?'Choisis une créature ennemie':d.tgt==='ally'?'Choisis une de tes créatures':d.tgt==='ebld'?'Choisis un bâtiment ennemi':'Reclique la carte pour lancer le sort'})();
 }
@@ -125,30 +131,39 @@ addEventListener('resize',fit);
 
 /* ---------- déroulement ---------- */
 function newGame(o){
-  MODE=o.mode;ME=o.me;LOCK=false;MGBUSY=false;NL=o.big?6:4;const R=rng(o.seed),O=opp(ME),hp=o.big?30:20;
+  MODE=o.mode;ME=o.me;MYSEAT=o.seat|0;AIRUN=o.mode==='solo'||!!o.host;LOCK=false;MGBUSY=false;NL=o.big?6:4;const R=rng(o.seed),O=opp(ME),hp=o.seats?40:o.big?30:20;
+  /* les sièges : 1 par côté en duel, 2 en 2 contre 2. g = numéro du joueur à la table (0 à 3), ai = joué par le robot */
+  const defs=o.seats||{p:[{deck:o.decks.p,name:o.names.p,face:o.faces.p,title:o.titles&&o.titles.p,g:0}],e:[{deck:o.decks.e,name:o.names.e,face:o.faces.e,title:o.titles&&o.titles.e,g:1,ai:o.mode==='solo'}]};
+  MYG=defs[ME][MYSEAT].g|0;
   const terrs=()=>{const t=shuffle(['fromage','sauce','slip','nuage'],R);return NL>4?shuffle(t.concat(shuffle(['fromage','sauce','slip','nuage'],R).slice(0,NL-4)),R):t};
-  const mk=(deck,hp)=>({hp,maxHp:hp,energy:0,maxE:1,rage:0,powUsed:false,deck:shuffle(deck.slice(),R),hand:[],lanes:Array(NL).fill(null),bld:Array(NL).fill(null),terr:terrs()});
-  const p=mk(o.decks.p,hp),e=mk(o.decks.e,o.hpE||hp);
-  G={p,e,names:o.names,faces:o.faces,titles:o.titles||{},active:null,sel:null,busy:true,over:false,uid:0,capE:o.big?8:7,big:!!o.big,story:o.story,turn:0,phase:'',bet:o.bet|0,R:rng(o.seed^0x2f6e2b1)};
+  const mk=(ds,hp)=>{const P={hp,maxHp:hp,rage:0,cur:0,started:false,lanes:Array(NL).fill(null),bld:Array(NL).fill(null),terr:terrs(),
+      seats:ds.map(d=>({name:d.name,face:d.face,title:d.title||'',ai:!!d.ai,g:d.g|0,energy:0,maxE:1,powUsed:false,deck:shuffle(d.deck.slice(),R),hand:[]}))};
+    for(const k of['energy','maxE','powUsed','deck','hand'])Object.defineProperty(P,k,{get(){return this.seats[this.cur][k]},set(v){this.seats[this.cur][k]=v}});return P};
+  const p=mk(defs.p,hp),e=mk(defs.e,o.hpE||hp),view=k=>({get p(){return p.seats[p.cur][k]},get e(){return e.seats[e.cur][k]}});
+  G={p,e,names:view('name'),faces:view('face'),titles:view('title'),two:p.seats.length>1,active:null,sel:null,busy:true,over:false,uid:0,capE:o.big?8:7,big:!!o.big,story:o.story,turn:0,phase:'',bet:o.bet|0,R:rng(o.seed^0x2f6e2b1)};
   /* Grande Baston : chacun a son quartier général au milieu */
   if(o.big)for(const P of[p,e])P.bld[NL>>1]=mkBld('qg');
-  for(let i=0;i<4;i++){p.hand.push(p.deck.pop());e.hand.push(e.deck.pop())}
+  for(const P of[p,e])for(const st of P.seats)for(let i=0;i<4;i++)st.hand.push(st.deck.pop());
   $('#heroes').innerHTML=`<div class="hero panel top" id="hero-${O}"></div><div class="hero panel bot" id="hero-${ME}"></div>`;
   $('#log').innerHTML='';$('#fx').innerHTML='';$('#loupe').innerHTML='';
   document.querySelectorAll('.scr').forEach(x=>x.classList.add('hide'));$('#app').classList.remove('hide');fit();
   SND.music('duel');
-  V.start(ME,{p:p.terr,e:e.terr},o.faces[O],NL);
+  V.start(ME,{p:p.terr,e:e.terr},G.faces[O],NL);
   V.onPick=(s,l)=>{if(okFor(s,l)&&!LOCK)tryPlay(G.sel,l)};
   V.onHover=h=>{if(!h)return;const c=G[h.s].lanes[h.l],b=G[h.s].bld[h.l];$('#loupe').innerHTML=c?cardHTML(c.id,c,false):b?cardHTML(b.id,{bhp:b.hp},false):terrHTML(G[h.s].terr[h.l])};
   render();
   /* un mini-jeu tiré au hasard décide qui commence ; l'autre pioche une carte en plus (les actions du pote attendent derrière) */
-  Q=sleep(1800).then(()=>MG.run({mode:MODE,me:ME,seed:o.seed,names:o.names,faces:o.faces})).then(async first=>{
-    if(G.over)return;const sec=opp(first);G[sec].hand.push(G[sec].deck.pop());if(first===ME)ev(ME,'mgwin',1);
-    SND.music('duel');banner(first===ME?'TU COMMENCES !':G.names[first].toUpperCase()+' COMMENCE !');render();await sleep(1200);return startTurn(first)});
+  /* en 2 contre 2, pas de mini-jeu : l'équipe qui commence est tirée au sort (même tirage chez tout le monde) */
+  Q=sleep(1800).then(()=>G.two?(G.R()<.5?'p':'e'):MG.run({mode:MODE,me:ME,seed:o.seed,names:{p:G.names.p,e:G.names.e},faces:{p:G.faces.p,e:G.faces.e}})).then(async first=>{
+    if(G.over)return;const sec=opp(first);G[sec].hand.push(G[sec].deck.pop());if(first===ME&&!G.two)ev(ME,'mgwin',1);
+    SND.music('duel');banner(iAm(first)?'TU COMMENCES !':G.names[first].toUpperCase()+' COMMENCE !');render();await sleep(1200);return startTurn(first)});
 }
 async function startTurn(s){
-  if(G.over)return;G.active=s;G.sel=null;G.phase='';G.busy=true;G.turn++;const P=G[s];P.powUsed=false;P.maxE=Math.min(G.capE,P.maxE+1);P.energy=P.maxE;
-  render();banner(s===ME?'À TOI !':'TOUR DE '+G.names[s].toUpperCase());SND.play(s===ME?'turn':'turn2');await sleep(700);
+  if(G.over)return;G.active=s;G.sel=null;G.phase='';G.busy=true;G.turn++;const P=G[s];
+  /* au tour suivant de l'équipe, c'est le coéquipier qui joue */
+  if(P.started)P.cur=(P.cur+1)%P.seats.length;P.started=true;
+  P.powUsed=false;P.maxE=Math.min(G.capE,P.maxE+(G.two?2:1));P.energy=P.maxE;
+  render();banner(iAm(s)?'À TOI !':'TOUR DE '+G.names[s].toUpperCase());SND.play(iAm(s)?'turn':'turn2');await sleep(700);
   if(G.turn>2&&G.turn%3===0)await tableEvent();
   if(G.over)return;
   /* bâtiments : effets de début de tour */
@@ -157,14 +172,14 @@ async function startTurn(s){
   for(let l=0;l<NL&&!G.over;l++){const c=G[s].lanes[l];if(c&&c.poison){SND.play('poison');await hurt(s,l,c.poison,{through:1})}}
   if(G.over)return;
   G.phase='choice';G.busy=false;render();
-  if(MODE==='solo'&&s==='e')aiTurn();
+  if(P.seats[P.cur].ai&&AIRUN)aiTurn(s);
 }
 async function playCard(s,i,l,q){
   const P=G[s],o=opp(s),id=P.hand[i],d=C[id];if(!d||d.c>P.energy)return;
   const old=d.k==='c'?P.lanes[l]:null;
   if((old&&old.fused)||(d.k==='b'&&P.bld[l]&&C[P.bld[l].id].qg))return;
   G.busy=true;G.sel=null;P.hand.splice(i,1);P.energy-=d.c;
-  log((s===ME?'Tu joues ':G.names[s]+' joue ')+d.n,s);
+  log((iAm(s)?'Tu joues ':G.names[s]+' joue ')+d.n,s);
   if(d.k==='c'){
     const u=mkUnit(id),b=bld(s,l);
     /* fusion : posée sur une de mes créatures, la nouvelle garde son pouvoir et additionne les forces */
@@ -242,20 +257,21 @@ function finish(w,why){if(G.over)return;G.over=true;G.busy=true;render();if(type
   setTimeout(()=>$('#end').classList.remove('hide'),900)}
 
 /* ---------- actions (les miennes et celles du pote en ligne) ---------- */
-function act(a){if(LOCK||!G||G.busy||G.over||G.active!==ME)return;LOCK=true;if(MODE==='net')NET.send(a);Q=Q.then(()=>apply(ME,a)).finally(()=>LOCK=false)}
-function remote(a){Q=Q.then(()=>apply(opp(ME),a))}
-async function apply(s,a){if(!G||G.over||G.active!==s)return;
+function act(a){if(LOCK||!G||G.busy||G.over||!myTurn())return;LOCK=true;if(MODE==='net')NET.send(G.two?Object.assign({g:MYG},a):a);Q=Q.then(()=>apply(ME,a,MYSEAT)).finally(()=>LOCK=false)}
+/* action d'un autre joueur. En 2 contre 2, a.g dit qui (0 à 3 : pair = côté p, impair = côté e) */
+function remote(a){Q=Q.then(()=>G&&G.two?apply(a.g%2?'e':'p',a,a.g>>1):apply(opp(ME),a,0))}
+async function apply(s,a,seat){if(!G||G.over||G.active!==s||G[s].cur!==(seat|0))return;
   if(a.t==='choice')return doChoice(s,a.v==='nrj'?'nrj':'cards');
   if(G.phase!=='main'||a.l>=NL)return;
   if(a.t==='play')await playCard(s,a.i,a.l,a.q);else if(a.t==='end')await endTurn(s);else if(a.t==='power')await doPower(s);else if(a.t==='rage')await doRage(s)}
 /* certains sorts lancent d'abord un mini-jeu éclair : son résultat (0 raté, 1 normal, 2 parfait) part avec l'action */
 function tryPlay(i,l){if(MGBUSY)return;const d=C[G[ME].hand[i]];if(!d)return;
-  if(d.k==='s'&&d.mg){MGBUSY=true;MG.quick(d.n).then(q=>{MGBUSY=false;if(G&&!G.over&&G.active===ME)act({t:'play',i,l,q})})}
+  if(d.k==='s'&&d.mg){MGBUSY=true;MG.quick(d.n).then(q=>{MGBUSY=false;if(G&&!G.over&&myTurn())act({t:'play',i,l,q})})}
   else act({t:'play',i,l})}
 
 /* ---------- le robot ---------- */
-function aiPick(){
-  const P=G.e,F=G.p,foes=F.lanes.map((c,l)=>c&&{c,l}).filter(Boolean),mine=P.lanes.map((c,l)=>c&&{c,l}).filter(Boolean);
+function aiPick(s){
+  const P=G[s],F=G[opp(s)],foes=F.lanes.map((c,l)=>c&&{c,l}).filter(Boolean),mine=P.lanes.map((c,l)=>c&&{c,l}).filter(Boolean);
   const byAtk=a=>a.slice().sort((x,y)=>y.c.atk-x.c.atk),full=P.lanes.every(Boolean);
   const idx=P.hand.map((id,i)=>i).filter(i=>C[P.hand[i]].c<=P.energy).sort((a,b)=>C[P.hand[b]].c-C[P.hand[a]].c);
   for(const i of idx){const id=P.hand[i],d=C[id];let t;
@@ -282,20 +298,23 @@ function aiPick(){
     }
   }
   return null}
-async function aiTurn(){
-  await sleep(900);if(G.over)return;
-  await doChoice('e',G.e.hand.length<=3?'cards':'nrj');
-  G.busy=true;render();await sleep(700);
-  if(G.e.rage>=RAGE_MAX&&G.p.lanes.some(Boolean)){G.busy=false;await doRage('e');if(G.over)return;G.busy=true}
-  /* le robot joue les mini-jeux des sorts au hasard (seulement en solo, donc pas besoin de tirage commun) */
-  for(let n=0;n<8&&!G.over;n++){const m=aiPick();if(!m)break;await playCard('e',m[0],m[1],Math.random()*3|0);if(G.over)return;G.busy=true;render();await sleep(550)}
-  if(G.over)return;
-  G.busy=false;if(canPower('e')){await doPower('e');if(G.over)return}
-  G.busy=false;endTurn('e')}
+async function aiDo(s,a){if(MODE==='net')NET.send(Object.assign({g:G[s].seats[G[s].cur].g},a));G.busy=false;await apply(s,a,G[s].cur)}
+async function aiTurn(s){
+  if(G.aiFor===G.turn)return;G.aiFor=G.turn;
+  const P=G[s],turn=G.turn,ok=()=>!G.over&&G.active===s&&G.turn===turn;
+  await sleep(900);if(!ok())return;
+  if(G.phase==='choice')await aiDo(s,{t:'choice',v:P.hand.length<=3?'cards':'nrj'});
+  if(!ok())return;G.busy=true;render();await sleep(700);
+  if(P.rage>=RAGE_MAX&&G[opp(s)].lanes.some(Boolean)){await aiDo(s,{t:'rage'});if(!ok())return;G.busy=true}
+  /* le robot joue les mini-jeux des sorts au hasard (le résultat part avec l'action) */
+  for(let n=0;n<8&&ok();n++){const m=aiPick(s);if(!m)break;await aiDo(s,{t:'play',i:m[0],l:m[1],q:Math.random()*3|0});if(!ok())return;G.busy=true;render();await sleep(550)}
+  if(!ok())return;
+  G.busy=false;if(canPower(s)){await aiDo(s,{t:'power'});if(!ok())return}
+  await aiDo(s,{t:'end'})}
 
 /* ---------- clics ---------- */
 $('#hand').addEventListener('click',e=>{
-  if(!G||G.busy||G.over||G.active!==ME||G.phase!=='main'||LOCK||MGBUSY)return;
+  if(!G||G.busy||G.over||!myTurn()||G.phase!=='main'||LOCK||MGBUSY)return;
   const h=e.target.closest('#hand .card');if(!h)return;
   const i=+h.dataset.i,d=C[G[ME].hand[i]];
   if(d.c>G[ME].energy){h.classList.remove('shake');void h.offsetWidth;h.classList.add('shake');$('#hint').textContent='Pas assez d\'énergie pour cette carte.';SND.play('error');return}

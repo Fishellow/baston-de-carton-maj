@@ -1,6 +1,8 @@
 /* Les pictos du jeu : des tracés simples à l'encre, pas d'emojis. IC('nom') renvoie le SVG. */
 const ICONS = {
   play: '<path d="M7 4.5l12.5 7.5L7 19.5z" fill="currentColor"/>',
+  friends: '<circle cx="8.5" cy="8" r="3.2"/><path d="M2.5 19c0-3.300 2.700-5.500 6-5.500s6 2.200 6 5.500"/><circle cx="17" cy="9" r="2.600"/><path d="M16 13.600c3.200-.3 5.500 1.700 5.500 4.900"/>',
+  team: '<path d="M4 4l6 6M4 4v4M4 4h4"/><path d="M20 4l-6 6M20 4v4M20 4h-4"/><path d="M4 20l6-6M20 20l-6-6"/><circle cx="12" cy="12" r="2.200"/>',
   globe: '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>',
   cards: '<rect x="4" y="6.5" width="9.5" height="13" rx="2" transform="rotate(-10 8.7 13)"/><rect x="10.5" y="4.5" width="9.5" height="13" rx="2" transform="rotate(8 15.2 11)"/>',
   shop: '<path d="M5 8.5h14l-1 11.5H6z"/><path d="M9 8.5V7a3 3 0 016 0v1.5"/>',

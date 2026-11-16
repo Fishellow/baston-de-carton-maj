@@ -6,10 +6,10 @@ let CUR='menu';
 function applyLook(){if(typeof V!=='undefined'&&V.setLook)V.setLook({halo:HALOS[S.d.use.halo].c,back:BACKS[S.d.use.back],table:TABLES[S.d.use.table]})}
 function show(id){CUR=id;document.querySelectorAll('.scr').forEach(x=>x.classList.toggle('hide',x.id!==id));$('#app').classList.add('hide');$('#modes').classList.add('hide');$('#hud').classList.remove('hide');
   applyLook();if(typeof V!=='undefined'&&V.showcase)V.showcase();SND.music('menu');
-  drawHud();if(id==='menu')drawMenu();if(id==='shop')drawShop();if(id==='coll')drawColl();if(id==='locker')drawLocker();if(id==='story')drawStory()}
+  drawHud();if(id==='friends')drawFriends();if(id==='lobby2')drawL2();if(id==='menu')drawMenu();if(id==='shop')drawShop();if(id==='coll')drawColl();if(id==='locker')drawLocker();if(id==='story')drawStory()}
 function toast(t){const b=$('#toast');b.textContent=t;b.classList.remove('show');void b.offsetWidth;b.classList.add('show')}
 function levelUps(up){up.forEach((u,i)=>setTimeout(()=>toast('Niveau '+u.lvl+' ! '+u.txt),i*2700))}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){if(b.dataset.go==='menu')NET.stop();show(b.dataset.go)}});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){if(/^(menu|lobby|lobby2)$/.test(b.dataset.go)){NET.stop();l2Reset()}show(b.dataset.go)}});
 /* les portraits 3D arrivent juste après le chargement : on redessine l'écran en cours */
 document.addEventListener('ports',()=>{if($('#app').classList.contains('hide'))show(CUR)});
 const price=n=>COIN+n;
@@ -70,7 +70,7 @@ function startSolo(o){const d=myDeck();if(!d)return;$('#modes').classList.add('h
 $('#bPlay').addEventListener('click',()=>{drawMenu();if(BET>S.d.coins)BET=0;drawBet();$('#modes').classList.remove('hide')});
 $('#bModesX').addEventListener('click',()=>$('#modes').classList.add('hide'));
 $('#modes').addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(!b)return;const m=b.dataset.mode;
-  if(m==='story')return show('story');const o=OPPS[Math.random()*OPPS.length|0];startSolo({n:o.n,f:o.f,ti:o.ti,deck:oppDeck(o.t),opt:{big:m==='big',bet:Math.min(BET,S.d.coins)}})});
+  if(m==='story')return show('story');if(m==='two')return startSolo2();const o=OPPS[Math.random()*OPPS.length|0];startSolo({n:o.n,f:o.f,ti:o.ti,deck:oppDeck(o.t),opt:{big:m==='big',bet:Math.min(BET,S.d.coins)}})});
 
 /* ---------- histoire ---------- */
 function drawStory(){const d=S.d;
@@ -193,18 +193,111 @@ function goNet(me,seed,mine,their,them,big){
   $('#hud').classList.add('hide');
   newGame({mode:'net',me,seed,big:!!big,decks:{[me]:mine,[o]:their},names:{[me]:S.d.name,[o]:esc(them.name)},faces:{[me]:S.d.avatar,[o]:AVATARS.includes(them.avatar)?them.avatar:'poulet'},titles:{[me]:S.d.use.title,[o]:ti}})}
 const netErr=e=>lobbyMsg(e&&e.type==='peer-unavailable'?'Code introuvable. Vérifie avec ton pote.':e&&e.type==='unavailable-id'?'Ce code est déjà pris, réessaie.':'Connexion impossible. Vérifie ton internet.');
-$('#bHost').addEventListener('click',()=>{const d=myDeck();if(!d)return;
-  const code=Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.random()*24|0]).join('');
+const rnd4=()=>Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.random()*24|0]).join('');
+const errText=e=>e&&e.type==='peer-unavailable'?'Code introuvable. Vérifie avec ton pote.':e&&e.type==='unavailable-id'?'Ce code est déjà pris, réessaie.':'Connexion impossible. Vérifie ton internet.';
+const myCard=()=>({name:S.d.name,avatar:S.d.avatar,title:S.d.use.title,fc:S.d.fcode});
+/* duel : je crée la partie (cb reçoit le code, pour l'envoyer à un ami) ou je rejoins avec un code */
+function hostDuel(cb){const d=myDeck();if(!d)return;const code=rnd4();
   $('#code').textContent='…';lobbyMsg('Création de la partie…');
   NET.onClose=()=>{};
   NET.onData=m=>{if(!m||m.t!=='hello')return;const their=cleanDeck(m.deck);if(!their)return lobbyMsg('Le deck de ton pote est invalide (il vous faut la même version du jeu).');
-    const seed=Math.random()*1e9|0;NET.send({t:'start',seed,big:NETBIG,name:S.d.name,avatar:S.d.avatar,title:S.d.use.title,deck:d});goNet('p',seed,d,their,m,NETBIG)};
-  NET.host(code,()=>{$('#code').textContent=code;lobbyMsg('Donne ce code à ton pote. En attente…')},netErr)});
-$('#bJoin').addEventListener('click',()=>{const d=myDeck();if(!d)return;
-  const code=$('#jcode').value.toUpperCase().replace(/[^A-Z]/g,'');if(code.length!==4)return lobbyMsg('Le code fait 4 lettres.');
+    const seed=Math.random()*1e9|0;NET.send(Object.assign({t:'start',seed,big:NETBIG,deck:d},myCard()));goNet('p',seed,d,their,m,NETBIG)};
+  NET.host(code,()=>{$('#code').textContent=code;lobbyMsg('Donne ce code à ton pote. En attente…');cb&&cb(code)},netErr)}
+function joinDuel(code){const d=myDeck();if(!d)return;
   lobbyMsg('Connexion…');NET.onClose=()=>lobbyMsg('Connexion perdue.');
-  NET.onData=m=>{if(!m||m.t!=='start')return;const their=cleanDeck(m.deck);if(!their)return lobbyMsg('Deck invalide (il vous faut la même version du jeu).');goNet('e',m.seed|0,d,their,m,!!m.big)};
-  NET.join(code,()=>{lobbyMsg('Connecté ! Lancement…');NET.send({t:'hello',name:S.d.name,avatar:S.d.avatar,title:S.d.use.title,deck:d})},netErr)});
+  NET.onData=m=>{if(!m)return;if(m.t==='full')return lobbyMsg('Cette partie est déjà pleine.');if(m.t!=='start')return;const their=cleanDeck(m.deck);if(!their)return lobbyMsg('Deck invalide (il vous faut la même version du jeu).');goNet('e',m.seed|0,d,their,m,!!m.big)};
+  NET.join(code,()=>{lobbyMsg('Connecté ! Lancement…');NET.send(Object.assign({t:'hello',deck:d},myCard()))},netErr)}
+$('#bHost').addEventListener('click',()=>hostDuel());
+$('#bJoin').addEventListener('click',()=>{const code=$('#jcode').value.toUpperCase().replace(/[^A-Z]/g,'');if(code.length!==4)return lobbyMsg('Le code fait 4 lettres.');joinDuel(code)});
+
+/* ---------- 2 contre 2 ----------
+   4 places autour de la table : 0 et 2 font équipe (côté p), 1 et 3 aussi (côté e). L'ordre des tours est 0, 1, 2, 3. */
+const botSeats=()=>OPPS.slice().sort(()=>Math.random()-.5).map(o=>({name:o.n,avatar:o.f,title:o.ti,deck:oppDeck(o.t),ai:true}));
+const seatDefs=x=>{const d=g=>({deck:x[g].deck,name:x[g].name,face:x[g].avatar,title:x[g].title,ai:!!x[g].ai,g});return{p:[d(0),d(2)],e:[d(1),d(3)]}};
+const cleanSeat=m=>{const deck=cleanDeck(m&&m.deck);return deck?{name:esc(m.name),avatar:AVATARS.includes(m.avatar)?m.avatar:'poulet',title:TITLES.includes(m.title)?m.title:'',deck,ai:!!m.ai,fc:FR.clean(m.fc)}:null};
+/* tout seul : moi + un robot contre deux robots */
+function startSolo2(){const d=myDeck();if(!d)return;$('#modes').classList.add('hide');$('#hud').classList.add('hide');const b=botSeats();
+  newGame({mode:'solo',me:'p',seat:0,seed:Math.random()*1e9|0,big:true,seats:seatDefs([Object.assign({deck:d},myCard()),b[0],b[1],b[2]])})}
+const L2={host:false,code:'',slots:[null,null,null,null],you:0};
+const l2Msg=t=>$('#l2msg').textContent=t;
+function l2Reset(){L2.host=false;L2.code='';L2.slots=[null,null,null,null];L2.you=0}
+function drawL2(){const inRoom=!!L2.code;$('#l2start').classList.toggle('hide',inRoom);$('#l2room').classList.toggle('hide',!inRoom);if(!inRoom)return;
+  $('#code2').textContent=L2.code;
+  const row=g=>{const x=L2.slots[g];return `<div class="l2seat ${x?'':'bot'} ${g===L2.you?'me':''}"><span class="face">${x?faceHTML(x.avatar):''}</span><div><b>${x?x.name:'Robot'}</b><small>${x?(g===L2.you?'Toi':x.title||'Joueur'):'place libre'}</small></div></div>`};
+  $('#l2teams').innerHTML=`<div class="l2team"><div class="label">Équipe 1</div>${row(0)}${row(2)}</div><i class="l2vs">VS</i><div class="l2team"><div class="label">Équipe 2</div>${row(1)}${row(3)}</div>`;
+  $('#l2acts').classList.toggle('hide',!L2.host);
+  const on=S.d.friends.filter(f=>FR.online(f.code)&&!L2.slots.some(x=>x&&x.fc===f.code));
+  $('#l2friends').innerHTML=!L2.host?'<p class="small">C\'est le créateur de la table qui invite et qui lance.</p>':
+    on.map(f=>`<div class="fr on"><span class="face">${faceHTML(f.avatar)}</span><div class="frn"><b>${f.name}</b></div><button class="btn sm yellow" data-inv2="${f.code}">Inviter</button></div>`).join('')||'<p class="small">Aucun ami en ligne pour l\'instant. Tu peux aussi donner le code de la table.</p>'}
+function l2Roster(){const pub=L2.slots.map(x=>x&&{name:x.name,avatar:x.avatar,title:x.title});NET.conns.forEach(c=>NET.to(c,{t:'roster',slots:pub,you:c.g}));if(CUR==='lobby2')drawL2()}
+function host2(cb){const d=myDeck();if(!d)return;if(L2.host&&L2.code){cb&&cb(L2.code);return}
+  const code=rnd4();L2.host=true;L2.you=0;L2.code='';L2.slots=[Object.assign({deck:d},myCard()),null,null,null];l2Msg('Création de la table…');
+  NET.onClose=c=>{if(c.g){L2.slots[c.g]=null;l2Roster()}};
+  NET.onData=(m,c)=>{if(!m||m.t!=='hello'||c.g)return;const x=cleanSeat(m);if(!x)return NET.to(c,{t:'bad'});
+    const g=[2,1,3].find(i=>!L2.slots[i]);if(!g)return;x.ai=false;x.conn=c;c.g=g;L2.slots[g]=x;SND.play('quest');l2Roster()};
+  NET.host(code,()=>{L2.code=code;l2Msg('Donne le code à tes potes ou invite tes amis. Les places vides seront des robots.');drawL2();cb&&cb(code)},e=>{l2Reset();drawL2();l2Msg(errText(e))},3)}
+function join2(code){const d=myDeck();if(!d)return;l2Reset();drawL2();l2Msg('Connexion…');let why='La table a été fermée.';
+  NET.onClose=()=>{l2Reset();if(CUR==='lobby2')drawL2();l2Msg(why)};
+  NET.onData=m=>{if(!m)return;
+    if(m.t==='full'){why='Cette table est pleine ou la partie a déjà commencé.';return}
+    if(m.t==='bad'){why='Deck invalide (il faut la même version du jeu pour tous).';return}
+    if(m.t==='roster'&&Array.isArray(m.slots)){L2.code=code;L2.you=m.you|0;L2.slots=[0,1,2,3].map(i=>{const x=m.slots[i];return x?{name:esc(x.name),avatar:AVATARS.includes(x.avatar)?x.avatar:'poulet',title:TITLES.includes(x.title)?x.title:''}:null});
+      l2Msg('Tu es à la table. Le créateur lance la partie quand tout le monde est là.');drawL2();return}
+    if(m.t==='start2'){if(!Array.isArray(m.seats)||m.seats.length!==4)return;const seats=m.seats.map(cleanSeat),g=m.you|0;if(seats.some(x=>!x)||g<1||g>3)return l2Msg('Partie invalide (il faut la même version du jeu pour tous).');goNet2(g,m.seed|0,seats,false)}};
+  NET.join(code,()=>NET.send(Object.assign({t:'hello',deck:d},myCard())),e=>l2Msg(errText(e)))}
+function goNet2(g,seed,seats,host){
+  if(host)NET.max=0;
+  NET.onData=(d,c)=>{if(!d)return;if(!host&&d.t==='left')return toast(esc(d.name)+' est parti : un robot le remplace.');
+    const a=cleanAct(d);if(!a)return;
+    /* l'hôte sait qui parle (la connexion), il colle le bon numéro et fait suivre aux autres */
+    if(host){if(!c||!c.g)return;a.g=c.g;NET.send(a,c)}else{const k=d.g|0;if(k<0||k>3||k===g)return;a.g=k}
+    remote(a)};
+  NET.onClose=c=>{if(!G||G.over)return;if(!host)return finish(ME,'Le créateur de la table est parti. La partie s\'arrête là.');
+    const s=c.g%2?'e':'p',k=c.g>>1,st=G[s].seats[k];if(!st||st.ai)return;st.ai=true;toast(st.name+' est parti : un robot le remplace.');NET.send({t:'left',name:st.name});
+    Q=Q.then(()=>{if(G&&!G.over&&G.active===s&&G[s].cur===k&&(G.phase==='choice'||G.phase==='main'))aiTurn(s)})};
+  $('#hud').classList.add('hide');l2Reset();
+  newGame({mode:'net',host,me:g%2?'e':'p',seat:g>>1,seed,big:true,seats:seatDefs(seats)})}
+$('#b2Host').addEventListener('click',()=>host2());
+$('#b2Join').addEventListener('click',()=>{const code=$('#j2code').value.toUpperCase().replace(/[^A-Z]/g,'');if(code.length!==4)return l2Msg('Le code fait 4 lettres.');join2(code)});
+$('#b2Swap').addEventListener('click',()=>{if(!L2.host)return;const[a,b,c]=[L2.slots[1],L2.slots[2],L2.slots[3]];L2.slots[1]=c;L2.slots[2]=a;L2.slots[3]=b;L2.slots.forEach((x,g)=>{if(x&&x.conn)x.conn.g=g});SND.play('click');l2Roster()});
+$('#b2Go').addEventListener('click',()=>{if(!L2.host||!L2.code)return;const bots=botSeats(),seed=Math.random()*1e9|0;
+  const seats=L2.slots.map(x=>x?{name:x.name,avatar:x.avatar,title:x.title,deck:x.deck,ai:false}:bots.pop());
+  NET.conns.forEach(c=>NET.to(c,{t:'start2',seed,seats,you:c.g}));goNet2(0,seed,seats,true)});
+$('#l2friends').addEventListener('click',e=>{const b=e.target.closest('[data-inv2]');if(!b||!L2.code)return;const f=FR.friend(b.dataset.inv2);
+  if(f&&FR.invite(f.code,'2v2',L2.code)){b.disabled=true;b.textContent='Invité';toast('Invitation envoyée à '+f.name+'.')}});
+
+/* ---------- amis ---------- */
+function drawFriends(){$('#fcode').textContent=S.d.fcode;
+  if(!$('#frmsg').dataset.keep)$('#frmsg').textContent=FR.dup?'Le jeu est déjà ouvert dans une autre fenêtre : les amis ne marchent que dans une seule.':FR.ready?'':'Connexion…';
+  $('#flist').innerHTML=S.d.friends.map(f=>{const on=FR.online(f.code);
+    return `<div class="fr ${on?'on':''}"><span class="face">${faceHTML(f.avatar)}</span><div class="frn"><b>${f.name}</b><small>${on?'En ligne':f.pend?'En attente (il doit ouvrir le jeu)':'Hors ligne'}</small></div>
+      <button class="btn sm red" data-inv="1v1" data-c="${f.code}" ${on?'':'disabled'}>Duel</button><button class="btn sm yellow" data-inv="2v2" data-c="${f.code}" ${on?'':'disabled'}>2 contre 2</button>
+      <button class="frx" data-del="${f.code}" title="Retirer de la liste">×</button></div>`}).join('')||'<p class="dkempty">Pas encore d\'ami ici.<br>Échangez vos codes, puis ajoute-le à gauche.</p>'}
+function drawFrTag(){const n=S.d.friends.filter(f=>FR.online(f.code)).length,t=$('#frTag');if(t){t.textContent=n?n+' en ligne':'';t.classList.toggle('show',!!n)}}
+FR.onChange=()=>{drawFrTag();if(CUR==='friends')drawFriends();if(CUR==='lobby2'&&L2.code)drawL2()};
+$('#bAdd').addEventListener('click',()=>{const err=FR.add($('#fadd').value),m=$('#frmsg');m.dataset.keep=1;m.textContent=err||'Ajouté. Il apparaîtra en ligne dès que son jeu sera ouvert.';if(!err){$('#fadd').value='';SND.play('quest')}else SND.play('error');setTimeout(()=>{delete m.dataset.keep},6000);drawFriends()});
+$('#fadd').addEventListener('keydown',e=>{if(e.key==='Enter')$('#bAdd').click()});
+$('#bCopy').addEventListener('click',()=>{const t=S.d.fcode,done=()=>toast('Code copié : '+t);
+  try{navigator.clipboard.writeText(t).then(done,()=>{throw 0})}catch(e){const i=document.createElement('input');i.value=t;document.body.appendChild(i);i.select();try{document.execCommand('copy');done()}catch(x){}i.remove()}});
+$('#flist').addEventListener('click',e=>{let b;
+  if(b=e.target.closest('[data-del]')){FR.remove(b.dataset.del);return}
+  if(!(b=e.target.closest('[data-inv]'))||b.disabled)return;const f=FR.friend(b.dataset.c);if(!f||!myDeck())return;
+  if(b.dataset.inv==='1v1'){NET.stop();l2Reset();show('lobby');hostDuel(code=>{if(FR.invite(f.code,'1v1',code))lobbyMsg('Invitation envoyée à '+f.name+'. En attente de sa réponse…')})}
+  else{if(!L2.host){NET.stop();l2Reset()}show('lobby2');host2(code=>{if(FR.invite(f.code,'2v2',code))toast('Invitation envoyée à '+f.name+'.')})}});
+/* une invitation arrive : petit panneau en haut, 30 secondes pour répondre */
+let INV=null;
+function closeInvite(ans){if(!INV)return;clearTimeout(INV.timer);if(ans)FR.reply(INV.c,ans);INV=null;$('#invite').classList.add('hide')}
+FR.onInvite=(f,mode,room,c)=>{
+  if(!$('#app').classList.contains('hide')||NET.peer||INV)return FR.reply(c,'busy');
+  INV={f,mode,room,c,timer:setTimeout(()=>closeInvite('no'),30000)};SND.play('quest');
+  $('#invite').innerHTML=`<span class="face">${faceHTML(f.avatar)}</span><div class="frn"><b>${f.name}</b><small>t'invite : ${mode==='2v2'?'2 contre 2':'duel'}</small></div><button class="btn sm green" data-ans="yes">Accepter</button><button class="btn sm" data-ans="no">Refuser</button>`;
+  $('#invite').classList.remove('hide')};
+$('#invite').addEventListener('click',e=>{const b=e.target.closest('[data-ans]');if(!b||!INV)return;const v=INV;
+  if(b.dataset.ans!=='yes')return closeInvite('no');
+  if(!myDeck())return closeInvite('no');
+  closeInvite();$('#modes').classList.add('hide');
+  if(v.mode==='2v2'){show('lobby2');join2(v.room)}else{show('lobby');joinDuel(v.room)}});
+FR.start();drawFrTag();
 
 /* ---------- mise à jour automatique (seulement dans le jeu installé : window.BDC vient de preload.js) ---------- */
 function updReady(v){const el=$('#ver');el.textContent='';const b=document.createElement('button');b.className='btn sm green';b.textContent='Mise à jour prête : relancer le jeu';b.addEventListener('click',()=>BDC.relaunch());el.appendChild(b);toast('Mise à jour '+v+' téléchargée.')}
