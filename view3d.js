@@ -155,6 +155,13 @@ function frame(now,timer){if(!running)return;if(!timer)requestAnimationFrame(fra
   const sk=optShake?shake:0;cam.lookAt(look.x+(Math.random()-.5)*sk,look.y+(Math.random()-.5)*sk,look.z);
   ren.render(scene,cam)}
 /* le perso assis en face : sweat + chapeau choisis par le joueur ; son avatar est collé à plat sur le devant de la tête */
+/* évolution : une tenue 3D (selon le terrain de la créature) accrochée sur elle, à sa taille */
+function evoGear(u){const id='evo_'+C[u.id].t;if(!window.BB||!BB[id]||u.gear)return;const g=u.m.g;g.updateMatrixWorld(true);
+  const bx=new T3.Box3().setFromObject(g),ws=g.getWorldScale(new T3.Vector3()).x||1,wp=g.getWorldPosition(new T3.Vector3());
+  const top=(bx.max.y-wp.y)/ws,w=Math.max(bx.max.x-bx.min.x,.3)/ws,dz=(wp.z-bx.min.z)/ws,e=M.build(id,u.tint),k=Math.max(.34,Math.min(.85,w/1.7));
+  e.U.uReveal.value=99;e.U.uBaseY.value=u.m.U.uBaseY.value;e.g.scale.setScalar(k);g.add(e.g);
+  const B=e.bones||{};if(B.top)B.top.position.set(0,top/k*16,0);if(B.back)B.back.position.set(0,top/k*16*.55,-dz/k*16*.8);
+  anims.push(tt=>{e.U.uTime.value=tt});u.gear=e}
 function seatPerso(lk,face,z){lk=lk||{};const id=window.BB&&BB['perso_'+lk.body]?'perso_'+lk.body:'adversaire',plain=x=>{x.U.uHolo.value=0;x.U.uReveal.value=999;x.U.uOut.value=.03;return x};
   const m=plain(M.build(id,0xffffff));m.g.position.set(0,-.05,z);scene.add(m.g);oppB=m.bones||{};
   if(id!=='adversaire'&&oppB.tete&&BB['hat_'+lk.hat]){const h=plain(M.build('hat_'+lk.hat,0xffffff));h.g.scale.setScalar(16);h.g.position.set(0,-26,16);oppB.tete.add(h.g)}
@@ -219,7 +226,7 @@ Object.assign(api,{
         if(u&&(!c||c.uid!==u.uid)){kill(u);u=null}
         if(c&&!u)u=spawn(s,l,c);
         if(u){const d=C[c.id],kk=c.shownAtk+'/'+c.hp+'/'+c.max;if(kk!==u.k){u.k=kk;u.stat.material.map=statTex(u,c.shownAtk,c.hp,c.shownAtk>d.a,c.hp<c.max)}u.zz.visible=!!c.stun;u.sh.visible=!!c.shield;u.po.visible=!!c.poison;
-          if(c.evo&&!u.evo){u.evo=true;const s0=u.sc,s1=s0+.22;tween(.6,q=>{u.sc=s0+(s1-s0)*back(q)});u.m.U.uFlash.value=1;u.disc.material.color.set(0xffd23f);shake=Math.max(shake,.2);for(let i=0;i<28;i++)puff(u.home.x+(Math.random()-.5)*.7,.3+Math.random()*1.1,u.home.z+(Math.random()-.5)*.5,i%2?0xffd23f:0xffffff,1.5)}}
+          if(c.evo&&!u.evo){u.evo=true;try{evoGear(u)}catch(err){console.error(err)}const s0=u.sc,s1=s0+.22;tween(.6,q=>{u.sc=s0+(s1-s0)*back(q)});u.m.U.uFlash.value=1;u.disc.material.color.set(0xffd23f);shake=Math.max(shake,.2);for(let i=0;i<28;i++)puff(u.home.x+(Math.random()-.5)*.7,.3+Math.random()*1.1,u.home.z+(Math.random()-.5)*.5,i%2?0xffd23f:0xffffff,1.5)}}
         /* case occupée : son décor s'aplatit pour laisser voir la créature et le bâtiment */
         const T=tiles[k],occ=!!(c||b),dk=T.g.userData.deco;if(dk&&time>2.6&&T.occ!==occ){T.occ=occ;const y0=dk.scale.y,y1=occ?.2:1;tween(.35,q=>{const v=y0+(y1-y0)*q;dk.scale.y=v;dk.position.y=(1-v)*.118})}
         T.hl.visible=!!okFn(s,l)}}
