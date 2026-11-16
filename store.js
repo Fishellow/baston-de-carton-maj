@@ -8,7 +8,11 @@ const BACKS={classic:{n:'Classique',a:'#e8443a',b:'#ffd23f'},nuit:{n:'Nuit étoi
 const BODIES={bleu:{n:'Bleu'},rouge:{n:'Rouge étoile'},vert:{n:'Vert rayé'},violet:{n:'Violet éclair'},noir:{n:'Noir Boss'},rose:{n:'Rose cœur'}};
 const HATS={aucun:{n:'Aucun'},casquette:{n:'Casquette'},bonnet:{n:'Bonnet'},cowboy:{n:'Cow-boy'},chef:{n:'Toque'},viking:{n:'Casque à cornes'},couronne:{n:'Couronne'}};
 const HALOS={bleu:{n:'Bleu',c:0x4cc9ff},vert:{n:'Vert',c:0x7bd88f},or:{n:'Or',c:0xffc933},violet:{n:'Violet',c:0xb388ff},rouge:{n:'Rouge',c:0xff7b54},blanc:{n:'Blanc pur',c:0xffffff}};
-const TITLES=['Débutant','Bagarreur','Champion du Carton','Légende','Le Boss Final','Sauveur du Carton','Champion du tournoi'];
+const TITLES=['Débutant','Bagarreur','Champion du Carton','Légende','Le Boss Final','Sauveur du Carton','Champion du tournoi','Légende de la saison'];
+/* saison : une route de récompenses qui repart à zéro chaque mois. [XP de saison à atteindre, récompense] */
+const SEASON=[[150,{c:60}],[300,{c:80}],[450,{f:1}],[600,{c:120}],[800,{f:1}],[1000,{c:150}],[1250,{f:2}],[1500,{c:300,title:'Légende de la saison'}]];
+const seasonKey=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)};
+const seasonTxt=r=>(r.c?r.c+' pièces':'')+(r.f?r.f+' paquet'+(r.f>1?'s':'')+' offert'+(r.f>1?'s':''):'')+(r.title?' + titre « '+r.title+' »':'');
 /* récompense de chaque niveau : c = pièces, f = paquets offerts, u / u2 = [type, id] débloqué */
 const LEVELS={2:{c:50},3:{u:['avatar','canard']},4:{u:['back','nuit']},5:{f:1,u:['title','Bagarreur']},6:{u:['halo','vert']},7:{u:['avatar','vache']},8:{u:['back','fromage']},9:{c:100,u:['avatar','fantome']},
   10:{u:['halo','or'],u2:['title','Champion du Carton']},11:{u:['avatar','mouton']},12:{u:['back','slip']},13:{f:1,u:['avatar','licorne']},14:{u:['halo','violet']},15:{u:['back','or'],u2:['title','Légende']},
@@ -35,6 +39,7 @@ const S={d:null,
     d.own.avatar=(d.own.avatar||[]).filter(a=>AVATARS.includes(a));for(const a of AVATARS.slice(0,7))if(!d.own.avatar.includes(a))d.own.avatar.push(a);
     for(let l=2;l<=d.lvl;l++){const r=LEVELS[l];if(r)for(const u of [r.u,r.u2])if(u&&!d.own[u[0]].includes(u[1]))d.own[u[0]].push(u[1])}
     if(!d.own.avatar.includes(d.avatar))d.avatar='poulet';
+    d.alt=d.alt||{};d.custom=Array.isArray(d.custom)?d.custom.slice(0,8):[];if(!d.season||d.season.k!==seasonKey())d.season={k:seasonKey(),xp:0,got:0};
     d.own.body=Object.keys(BODIES);d.own.hat=Object.keys(HATS);if(!BODIES[d.use.body])d.use.body='bleu';if(!HATS[d.use.hat])d.use.hat='casquette';
     /* amis : mon code (tiré une fois pour toutes) et ma liste */
     if(!/^[A-Z0-9]{6}$/.test(d.fcode||''))d.fcode=Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.random()*32|0]).join('');
@@ -47,7 +52,9 @@ const S={d:null,
   deck(){return this.d.decks[this.d.active].cards},
   deckOk(cards){if(cards.length!==20)return false;const n={};for(const id of cards){n[id]=(n[id]||0)+1;if(!C[id]||n[id]>Math.min(RAR[C[id].r].max,this.d.col[id]||0))return false}return true},
   /* ajoute une carte ; renvoie les pièces rendues si c'est un doublon en trop */
-  add(id){const r=RAR[C[id].r];if((this.d.col[id]||0)>=r.max){this.d.coins+=r.dust;return r.dust}this.d.col[id]=(this.d.col[id]||0)+1;return 0},
+  add(id){const r=RAR[C[id].r];if((this.d.col[id]||0)>=r.max){this.d.coins+=r.dust;return r.dust}this.d.col[id]=(this.d.col[id]||0)+1;
+    const x=Math.random(),v=x<.02?'gold':x<.1?'foil':null;if(v&&this.d.alt[id]!=='gold'&&this.d.alt[id]!==v){this.d.alt[id]=v;if(typeof toast==='function')setTimeout(()=>toast(C[id].n+' : version '+(v==='gold'?'DORÉE':'brillante')+' obtenue !'),1200)}
+    return 0},
   /* Fabrique un deck de 20 cartes avec ce que je possède.
      o.keep = cartes à garder (le reste est complété), o.t = terrain à privilégier.
      Répartition visée : 5 sorts, 2 bâtiments, le reste en créatures dont une bonne moitié pas chères. */
@@ -94,7 +101,9 @@ const PROG={
     if(ch)S.save()},
   claim(j){const d=S.d,q=d.quests[j],Q=QUESTS[q.i];if(!q.ready||q.done)return[];q.done=true;d.coins+=Q.r;SND.play('coin');const up=this.addXp(30);S.save();return up},
   /* ajoute de l'XP ; renvoie la liste des niveaux gagnés avec leur récompense */
-  addXp(n){const d=S.d,up=[];d.xp+=n;while(d.xp>=this.need(d.lvl)){d.xp-=this.need(d.lvl);d.lvl++;const r=LEVELS[d.lvl]||{c:60};
+  addXp(n){const d=S.d,up=[];d.xp+=n;
+    /* la saison avance avec la même XP */
+    const se=d.season;se.xp+=n;while(se.got<SEASON.length&&se.xp>=SEASON[se.got][0]){const r=SEASON[se.got][1];se.got++;d.coins+=r.c||0;d.free=(d.free||0)+(r.f||0);if(r.title&&!d.own.title.includes(r.title))d.own.title.push(r.title);if(typeof toast==='function')toast('Saison, palier '+se.got+' : '+seasonTxt(r))}while(d.xp>=this.need(d.lvl)){d.xp-=this.need(d.lvl);d.lvl++;const r=LEVELS[d.lvl]||{c:60};
       if(r.c)d.coins+=r.c;if(r.f)d.free=(d.free||0)+r.f;for(const u of [r.u,r.u2])if(u&&!d.own[u[0]].includes(u[1]))d.own[u[0]].push(u[1]);
       up.push({lvl:d.lvl,txt:rewardTxt(r)})}
     if(up.length)SND.play('level');S.save();return up},

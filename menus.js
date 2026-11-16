@@ -49,6 +49,7 @@ saveOpt();
 /* ---------- accueil ---------- */
 function drawMenu(){const d=S.d;PROG.roll();
   $('#stats').textContent=`${d.wins} victoires · ${d.losses} défaites · ${IDS.filter(id=>d.col[id]).length} / ${IDS.length} cartes`;
+  if(typeof drawExtras==='function')setTimeout(drawExtras,0);
   $('#freeTag').textContent=d.free?d.free+' offert'+(d.free>1?'s':''):'';
   $('#storyTag').textContent=d.story>=STORY.length?'Histoire terminée. Tu peux rejouer les chapitres.':'Chapitre '+(d.story+1)+' sur '+STORY.length+' : '+STORY[d.story].n+'.';
   $('#quests').innerHTML='<div class="label">Quêtes du jour</div>'+d.quests.map((q,j)=>{const Q=QUESTS[q.i];
@@ -78,7 +79,7 @@ function startSolo(o){const d=o.mine||myDeck();if(!d)return;$('#modes').classLis
 $('#bPlay').addEventListener('click',()=>{drawMenu();if(BET>S.d.coins)BET=0;drawBet();$('#modes').classList.remove('hide')});
 $('#bModesX').addEventListener('click',()=>$('#modes').classList.add('hide'));
 $('#modes').addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(!b)return;const m=b.dataset.mode;
-  if(m==='story')return show('story');if(m==='two')return startSolo2();if(m==='draft')return startDraft();if(m==='boss')return startBoss();const o=OPPS[Math.random()*OPPS.length|0];startSolo({n:o.n,f:o.f,ti:o.ti,deck:oppDeck(o.t),opt:{big:m==='big',bet:Math.min(BET,S.d.coins)}})});
+  if(m==='story')return show('story');if(m==='two')return startSolo2();if(m==='draft')return startDraft();if(m==='defi')return startDefi();if(m==='boss')return startBoss();const o=OPPS[Math.random()*OPPS.length|0];startSolo({n:o.n,f:o.f,ti:o.ti,deck:oppDeck(o.t),opt:{big:m==='big',bet:Math.min(BET,S.d.coins)}})});
 
 /* ---------- histoire ---------- */
 function drawStory(){const d=S.d;

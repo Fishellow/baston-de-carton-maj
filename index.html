@@ -52,6 +52,7 @@
       <button class="btn mode" data-mode="two"><span data-ic="team"></span>2 contre 2<small>Toi et un robot contre deux robots, sur la grande table.</small></button>
       <button class="btn mode" data-mode="draft"><span data-ic="cards"></span>Draft<small>Tu choisis 20 cartes, une par une, parmi 3. Pas besoin de collection.</small></button>
       <button class="btn mode" data-mode="boss"><span data-ic="trophy"></span>Boss à deux<small>Toi et un robot contre un énorme boss à 70 points de vie.</small></button>
+      <button class="btn mode yellow" data-mode="defi"><span data-ic="bolt"></span>Défi du jour<small id="defiTag"></small></button>
       <button class="btn mode" data-mode="story"><span data-ic="flag"></span>Histoire<small id="storyTag">8 chapitres, des boss et des récompenses.</small></button>
     </div>
     <div class="bets"><span>Pari sur ta victoire :</span><button class="chip on" data-bet="0">Aucun</button><button class="chip" data-bet="20">20 pièces</button><button class="chip" data-bet="50">50 pièces</button><button class="chip" data-bet="100">100 pièces</button><span class="small">doublé si tu gagnes, perdu sinon (pas en Histoire)</span></div>
@@ -96,7 +97,7 @@
       <div class="dkhead"><input id="dname" maxlength="14" spellcheck="false" title="Nom du deck"><div id="dcount"></div></div>
       <div class="dkprog"><i id="dprog"></i></div>
       <div id="dstatus"></div>
-      <div class="dkacts onlyeasy"><button class="btn sm" id="bEdit">Modifier carte par carte</button></div>
+      <div class="dkacts onlyeasy"><button class="btn sm" id="bEdit">Modifier carte par carte</button><button class="btn sm" id="bMaker">Créer une carte</button></div>
       <div class="dkacts onlyedit"><button class="btn green" id="bFill">Compléter</button><button class="btn sm" id="bClear">Vider</button></div>
       <button class="btn sm onlyedit" id="bEasy">Retour aux decks tout faits</button>
       <div id="dtypes"></div>
@@ -197,6 +198,7 @@
     <div class="sidebtns"><button class="btn sm" id="bSet2" title="Réglages" data-ic="gear"></button><button class="btn sm" id="quit">Abandonner</button></div>
   </div>
   <div id="choice" class="hide"><div class="panel chbox"><div class="label">Début de ton tour</div><div class="chs"><button class="btn yellow" data-ch="cards">2 cartes<small>Pioche 2 cartes</small></button><button class="btn blue" data-ch="nrj">1 carte + 1 énergie<small>Pour jouer plus gros ce tour</small></button></div></div></div>
+  <div id="mate"></div>
   <div id="bubbles"></div>
   <div id="emo"><button class="btn sm" id="bEmo">Parler</button><div id="emoList" class="panel hide"></div></div>
   <div id="mg" class="hide"></div>
@@ -216,6 +218,25 @@
 </div>
 
 <div id="invite" class="panel hide"></div>
+<!-- créateur de carte -->
+<div id="maker" class="hide"><div class="panel mkbox">
+  <div class="label">Créer une carte</div>
+  <div class="mkrow">
+    <div class="mkform">
+      <input id="mkName" maxlength="18" placeholder="Nom de la carte" spellcheck="false">
+      <div class="mkl">Terrain</div><div id="mkTerr" class="mkchips"></div>
+      <div class="mkl">Pouvoir</div><div id="mkPow" class="mkchips"></div>
+      <div class="mkl">Attaque <b id="mkAv"></b></div><input type="range" id="mkA" min="0" max="8" value="2">
+      <div class="mkl">Vie <b id="mkHv"></b></div><input type="range" id="mkH" min="1" max="9" value="3">
+      <div class="mkl">Personnage</div><div id="mkArt"></div>
+    </div>
+    <div class="mkside"><div id="mkPrev"></div><div class="small">Le prix en énergie se calcule tout seul.</div>
+      <button class="btn green" id="mkGo">Créer</button><button class="btn sm" id="mkX">Fermer</button></div>
+  </div>
+  <div class="label">Tes cartes inventées</div><div id="mkList"></div>
+  <div class="mkadd"><input id="mkCode" placeholder="Colle ici le code de la carte d'un pote" spellcheck="false"><button class="btn sm blue" id="mkAdd">Ajouter</button></div>
+  <div class="small">Pour jouer en ligne avec une carte inventée, ton adversaire doit l'avoir ajoutée aussi (avec son code).</div>
+</div></div>
 <div id="fx"></div><div id="banner"></div><div id="toast"></div>
 <div id="packfx" class="hide"></div>
 <div class="screen hide" id="end"><div class="box"><h1 id="endT"></h1><p id="endP"></p><button id="again">Menu</button></div></div>
@@ -231,11 +252,13 @@
 <script src="friends.js"></script>
 <script src="three.min.js"></script>
 <script src="bbmodels.js"></script>
+<script src="custom0.js"></script>
 <script src="models.js"></script>
 <script src="view3d.js"></script>
 <script src="minigames.js"></script>
 <script src="game.js"></script>
 <script src="menus.js"></script>
 <script src="tournoi.js"></script>
+<script src="extras.js"></script>
 </body>
 </html>

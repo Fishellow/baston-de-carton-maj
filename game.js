@@ -110,6 +110,8 @@ function render(){
   $('#hand').innerHTML=MS.hand.map((id,i)=>cardHTML(id,null,false,(mine&&i===G.sel?'sel ':'')+(C[id].c>MS.energy?'no':''))).join('');
   $('#hand').classList.toggle('many',MS.hand.length>5);$('#hand').classList.toggle('lots',MS.hand.length>6);
   [...$('#hand').children].forEach((el,i)=>el.dataset.i=i);
+  /* 2 contre 2 : je vois la main de mon coéquipier (en petit, à gauche) */
+  const mt=H.seats.length>1?H.seats[1-MYSEAT]:null;$('#mate').innerHTML=mt?'<b>Main de '+mt.name+'</b><div>'+mt.hand.map(id=>cardHTML(id)).join('')+'</div>':'';
   $('#go').disabled=!myMain;
   $('#pow').disabled=!myMain||!canPower(ME);$('#pow').innerHTML=`${POWERS[pk].n}<small>${POWERS[pk].x} · 2 énergies</small>`;
   $('#rage').classList.toggle('hide',H.rage<RAGE_MAX);$('#rage').disabled=!myMain;
@@ -145,7 +147,7 @@ function newGame(o){
   /* Grande Baston : chacun a son quartier général au milieu */
   if(o.big)for(const P of[p,e])P.bld[NL>>1]=mkBld('qg');
   for(const P of[p,e])for(const st of P.seats)for(let i=0;i<4&&st.deck.length;i++)st.hand.push(st.deck.pop());
-  G.auto=!!o.auto;$('#app').classList.toggle('auto',G.auto);
+  G.auto=!!o.auto;G.defi=!!o.defi;$('#app').classList.toggle('auto',G.auto);
   if(o.auto)for(const s of['p','e'])(o.auto[s]||[]).slice(0,NL).forEach((u,l)=>{if(u&&C[u.id]&&C[u.id].k==='c')G[s].lanes[l]=mkUnit(u.id,u.star)});
   $('#heroes').innerHTML=`<div class="hero panel top" id="hero-${O}"></div><div class="hero panel bot" id="hero-${ME}"></div>`;
   $('#log').innerHTML='';$('#fx').innerHTML='';$('#bubbles').innerHTML='';$('#emoList').classList.add('hide');$('#loupe').innerHTML='';
@@ -258,6 +260,7 @@ function finish(w,why){if(G.over)return;G.over=true;G.busy=true;render();if(type
   S.d.coins=Math.max(0,S.d.coins+gain+(win?bet:-bet));win?S.d.wins++:S.d.losses++;
   if(win){ev(ME,'win',1);if(G[ME].hp>=G[ME].maxHp/2)ev(ME,'winBig',1)}ev(ME,'game',1);
   /* mode histoire : la première victoire d'un chapitre ouvre le suivant et donne sa récompense */
+  let defiTxt='';if(win&&G.defi&&S.d.defi!==dayKey()){S.d.defi=dayKey();S.d.coins+=100;defiTxt='Défi du jour réussi : +100 pièces'}
   let storyTxt='';if(win&&G.story!=null&&G.story===S.d.story){S.d.story++;storyTxt=storyReward(STORY[G.story])}
   const up=typeof PROG!=='undefined'?PROG.addXp(xp):[];S.save();
   SND.music(null);SND.play(win?'win':'lose');
@@ -265,7 +268,7 @@ function finish(w,why){if(G.over)return;G.over=true;G.busy=true;render();if(type
   $('#endP').innerHTML=`<span class="why">${why||(win?G.names[opp(ME)]+' retourne dans le panier à linge.':'Tu t\'es fait laver à 90°. Revanche ?')}</span>
     <div class="gains"><span>${COIN}+${gain}</span><span class="xp">+${xp} XP</span></div>`
     +(bet?`<div class="lvup ${win?'':'bad'}">Pari : ${win?'+':'-'}${bet} pièces</div>`:'')
-    +(storyTxt?`<div class="story-win">Chapitre terminé — ${storyTxt}</div>`:'')+up.map(u=>`<div class="lvup">Niveau ${u.lvl} — ${u.txt}</div>`).join('');
+    +(defiTxt?`<div class="story-win">${defiTxt}</div>`:'')+(storyTxt?`<div class="story-win">Chapitre terminé — ${storyTxt}</div>`:'')+up.map(u=>`<div class="lvup">Niveau ${u.lvl} — ${u.txt}</div>`).join('');
   if(win){const cols=['#e8443a','#ffd23f','#58d68d','#7fd4ff','#fff6e0'];for(let i=0;i<60;i++){const c=document.createElement('div');c.className='conf';c.style.background=cols[i%5];c.style.left=Math.random()*100+'vw';c.style.animationDuration=2+Math.random()*3+'s';c.style.animationDelay=Math.random()*1.5+'s';$('#fx').appendChild(c)}}
   setTimeout(()=>{if(G&&G.over)$('#end').classList.remove('hide')},900)}
 

@@ -106,6 +106,8 @@ for(const id of['claque','pizza','meteor'])C[id].mg=1;
 const IDS=Object.keys(C).filter(id=>!C[id].hidden);
 const STARTER=['poulet','poulet','souris','souris','raclette','raclette','piment','piment','saucisse','saucisse','grenouille','grenouille','chaussette','chaussette','pigeon','pigeon','claque','claque','cafe','gouter'];
 function cardHTML(id,inst,mini,cls=''){const d=C[id];
+  /* version alternative que je possède : brillante (reflets animés) ou dorée */
+  const av=typeof S!=='undefined'&&S.d&&S.d.alt&&S.d.alt[id];if(av)cls+=' alt-'+av;
   let art;const P=window.PORT&&PORT[id];if(P)art=`<img class="port" src="${P}" alt="">`;else if(d.img)art=`<img src="${d.img}" alt="">`;else art='';
   let st='';
   if(d.k==='b')st=`<div class="st h">${inst&&inst.bhp!=null?inst.bhp:d.bh}</div>`;

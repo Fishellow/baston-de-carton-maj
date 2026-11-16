@@ -399,3 +399,29 @@ input{background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius
 .rslot .cost{position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);font-family:"Lilita One";font-size:19px;background:var(--yellow);border:3px solid var(--ink);border-radius:10px;padding:0 10px;z-index:3;white-space:nowrap}
 .rslot.no{opacity:.45}
 .racts{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:10px}
+
+/* 2 contre 2 : la main du coéquipier */
+#mate{position:absolute;left:12px;top:104px;zoom:var(--hz,1);z-index:5}
+#mate:empty{display:none}
+#mate b{display:inline-block;font-family:"Lilita One";font-weight:400;font-size:14px;background:var(--ink);color:var(--paper);border-radius:9px;padding:2px 10px;margin-bottom:6px}
+#mate div{display:grid;grid-template-columns:repeat(2,auto);gap:8px;zoom:.6;width:max-content}
+#mate .card.no{filter:grayscale(.7) brightness(.85)}
+
+/* cartes alternatives */
+.card.alt-foil::after,.card.alt-gold::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:4;background:linear-gradient(115deg,transparent 22%,#ff5cf055 36%,#5cf0ff66 50%,#f0ff5c55 64%,transparent 78%);background-size:260% 260%;mix-blend-mode:screen;animation:foil 3.2s linear infinite}
+.card.alt-gold{box-shadow:0 0 0 4px #ffc933,0 0 20px 3px #ffc933aa}
+.card.alt-gold::after{background:linear-gradient(115deg,transparent 25%,#fff3b0aa 45%,#ffc93399 55%,transparent 75%);background-size:260% 260%;animation-duration:2.2s}
+.card.alt-gold .port{filter:drop-shadow(0 0 5px #ffc933) saturate(1.25)}
+@keyframes foil{from{background-position:120% 0}to{background-position:-140% 0}}
+/* saison */
+.season{margin-top:10px;border-top:3px dashed #2a1b3d44;padding-top:10px;display:flex;flex-direction:column;gap:5px}
+/* créateur de carte */
+#maker{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:#1b1035cc}#maker.hide{display:none}
+.mkbox{padding:18px 22px;display:flex;flex-direction:column;gap:10px;width:min(820px,94vw);max-height:92vh;overflow:auto}
+.mkrow{display:flex;gap:22px}.mkform{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+.mkside{width:210px;display:flex;flex-direction:column;align-items:center;gap:10px}#mkPrev{zoom:1.25;min-height:200px}
+.mkl{font-family:"Lilita One";font-size:14px;margin-top:4px}.mkchips{display:flex;gap:6px;flex-wrap:wrap}.mkchips .chip{font-size:13px;padding:3px 9px}
+#mkArt{display:flex;gap:5px;flex-wrap:wrap;max-height:112px;overflow:auto}
+#mkArt button{width:46px;height:46px;border:3px solid var(--ink);border-radius:10px;background:#fff;padding:0;cursor:pointer}#mkArt button.on{background:var(--yellow)}#mkArt img{width:100%;height:100%;object-fit:contain}
+#mkList{display:flex;flex-direction:column;gap:6px}.mkit{display:flex;align-items:center;gap:10px;font-weight:700}.mkit b{flex:1;font-family:"Lilita One";font-weight:400}
+.mkadd{display:flex;gap:8px}.mkadd input{flex:1}
