@@ -49,7 +49,9 @@ async function hurtH(s,n){if(G.over)return;G[s].hp-=n;G[s].rage=Math.min(RAGE_MA
   V.heroHit(s);render();await sleep(260);
   if(G[s].hp<=0)finish(opp(s))}
 /* évolution d'une créature : +2 / +2, une seule fois */
-async function evolve(s,l){const c=G[s].lanes[l];if(!c||c.evo)return;c.evo=true;c.atk+=2;c.hp+=2;c.max+=2;float(slot(s,l),'Évolution !','g');log(C[c.id].n+' évolue (+2 / +2)',s,'ko');SND.play('legend');render();await sleep(600)}
+async function evolve(s,l){const c=G[s].lanes[l];if(!c||c.evo)return;c.evo=true;ev(s,'evo',1);c.atk+=2;c.hp+=2;c.max+=2;float(slot(s,l),'Évolution !','g');log(C[c.id].n+' évolue (+2 / +2)',s,'ko');SND.play('legend');render();await sleep(600)}
+/* piège : posé face cachée sur mon couloir */
+function setTrap(s,l,id){G[s].trap[l]=id;float(slot(s,l),'Piège posé','');SND.play('slam');render()}
 /* un bâtiment encaisse ; détruit, le quartier général coûte 5 PV à son joueur */
 async function hurtB(s,l,n){const b=G[s].bld[l];if(!b||G.over)return;const d=C[b.id];b.hp-=n;float(slot(s,l),'-'+n,'r');SND.play('hit');V.hitB(s,l);await sleep(260);
   if(b.hp<=0){G[s].bld[l]=null;log(d.n+' est détruit',s,'ko');SND.play('death');render();if(d.qg){banner('QUARTIER GÉNÉRAL DÉTRUIT !');await sleep(500);await hurtH(s,5)}}
@@ -90,7 +92,7 @@ async function tableEvent(){const e=EVENTS[G.R()*EVENTS.length|0];log('Événeme
 /* ---------- affichage ---------- */
 const slot=(s,l)=>({getBoundingClientRect:()=>V.rect(s,l)});
 function okFor(s,l){if(G&&G.prep)return s===ME&&typeof TOUR!=='undefined'&&!!TOUR.sel;if(!G||G.busy||G.over||!myTurn()||G.phase!=='main'||G.sel==null)return false;const sel=C[G[ME].hand[G.sel]],c=G[s].lanes[l],b=G[s].bld[l];
-  return sel.k==='c'?s===ME&&!(c&&c.fused):sel.k==='b'?s===ME&&!(b&&C[b.id].qg):sel.tgt==='enemy'?s!==ME&&!!c:sel.tgt==='ally'?s===ME&&!!c:sel.tgt==='ebld'?s!==ME&&!!b:false}
+  return sel.k==='c'?s===ME&&!(c&&c.fused):sel.k==='b'?s===ME&&!(b&&C[b.id].qg):sel.tgt==='enemy'?s!==ME&&!!c:sel.tgt==='ally'?s===ME&&!!c:sel.tgt==='ebld'?s!==ME&&!!b:sel.tgt==='trap'?s===ME&&!G[s].trap[l]:false}
 const terrHTML=t=>`<div class="tinfo panel"><b>${T[t].n}</b><span>Une créature du même terrain posée ici gagne +1 attaque.</span></div>`;
 function render(){
   if(!G)return;
@@ -118,7 +120,7 @@ function render(){
   $('#choice').classList.toggle('hide',!(mine&&G.phase==='choice'));
   if(!G.over)$('#hint').textContent=!mine?(G.active&&!myTurn()?G.names[G.active]+(G.active===ME?' (ton coéquipier) joue…':' réfléchit…'):'…'):G.phase==='choice'?'Début de tour : choisis ton bonus.':
     G.sel==null?'Choisis une carte, puis lance la baston.':
-    (()=>{const d=C[H.hand[G.sel]];return d.k==='c'?'Choisis un couloir. Sur une de tes créatures : fusion.':d.k==='b'?'Choisis un de tes couloirs pour construire':d.tgt==='enemy'?'Choisis une créature ennemie':d.tgt==='ally'?'Choisis une de tes créatures':d.tgt==='ebld'?'Choisis un bâtiment ennemi':'Reclique la carte pour lancer le sort'})();
+    (()=>{const d=C[H.hand[G.sel]];return d.k==='c'?'Choisis un couloir. Sur une de tes créatures : fusion.':d.k==='b'?'Choisis un de tes couloirs pour construire':d.tgt==='enemy'?'Choisis une créature ennemie':d.tgt==='ally'?'Choisis une de tes créatures':d.tgt==='ebld'?'Choisis un bâtiment ennemi':d.tgt==='trap'?'Choisis un de tes couloirs pour cacher le piège':'Reclique la carte pour lancer le sort'})();
 }
 function float(el,txt,cls){if(!el)return;const r=el.getBoundingClientRect(),f=document.createElement('div');f.className='float '+(cls||'');f.textContent=txt;
   f.style.left=r.left+r.width/2+(Math.random()*30-15)+'px';f.style.top=r.top+r.height/2+'px';$('#fx').appendChild(f);setTimeout(()=>f.remove(),900)}
@@ -139,7 +141,7 @@ function newGame(o){
   const defs=o.seats||{p:[{deck:o.decks.p,name:o.names.p,face:o.faces.p,title:o.titles&&o.titles.p,look:o.looks&&o.looks.p,sh:o.shiny&&o.shiny.p,g:0}],e:[{deck:o.decks.e,name:o.names.e,face:o.faces.e,title:o.titles&&o.titles.e,look:o.looks&&o.looks.e,sh:o.shiny&&o.shiny.e,g:1,ai:o.mode==='solo'}]};
   MYG=defs[ME][MYSEAT].g|0;
   const terrs=()=>{if(o.auto)return['fromage','sauce','slip','nuage'];const t=shuffle(['fromage','sauce','slip','nuage'],R);return NL>4?shuffle(t.concat(shuffle(['fromage','sauce','slip','nuage'],R).slice(0,NL-4)),R):t};
-  const mk=(ds,hp)=>{const P={hp,maxHp:hp,rage:0,cur:0,started:false,lanes:Array(NL).fill(null),bld:Array(NL).fill(null),terr:terrs(),
+  const mk=(ds,hp)=>{const P={hp,maxHp:hp,rage:0,cur:0,started:false,lanes:Array(NL).fill(null),bld:Array(NL).fill(null),trap:Array(NL).fill(null),terr:terrs(),
       seats:ds.map(d=>({name:d.name,face:d.face,look:d.look||null,sh:d.sh||[],title:d.title||'',ai:!!d.ai,g:d.g|0,energy:0,maxE:1,powUsed:false,deck:shuffle(d.deck.slice(),R),hand:[]}))};
     for(const k of['energy','maxE','powUsed','deck','hand'])Object.defineProperty(P,k,{get(){return this.seats[this.cur][k]},set(v){this.seats[this.cur][k]=v}});return P};
   const p=mk(defs.p,hp),e=mk(defs.e,o.hpE||hp),view=k=>({get p(){return p.seats[p.cur][k]},get e(){return e.seats[e.cur][k]}});
@@ -152,7 +154,7 @@ function newGame(o){
   /* tournoi, bonus d'équipe : 2 créatures du même terrain = +1 attaque chacune, 4 = +2 */
   if(o.auto)for(const s of['p','e']){const n={};G[s].lanes.forEach(c=>{if(c)n[C[c.id].t]=(n[C[c.id].t]||0)+1});G[s].lanes.forEach(c=>{if(c)c.atk+=n[C[c.id].t]>=4?2:n[C[c.id].t]>=2?1:0})}
   $('#heroes').innerHTML=`<div class="hero panel top" id="hero-${O}"></div><div class="hero panel bot" id="hero-${ME}"></div>`;
-  $('#log').innerHTML='';$('#fx').innerHTML='';$('#bubbles').innerHTML='';$('#emoList').classList.add('hide');$('#loupe').innerHTML='';
+  $('#end').classList.add('hide');$('#log').innerHTML='';$('#fx').innerHTML='';$('#bubbles').innerHTML='';$('#emoList').classList.add('hide');$('#loupe').innerHTML='';
   document.querySelectorAll('.scr').forEach(x=>x.classList.add('hide'));$('#app').classList.remove('hide');fit();
   SND.music('duel');
   V.start(ME,{p:p.terr,e:e.terr},G.faces[O],NL,G[O].seats[0].look);
@@ -192,7 +194,7 @@ async function playCard(s,i,l,q){
   if(d.k==='c'){
     const u=mkUnit(id),b=bld(s,l);u.sh=(P.seats[P.cur].sh||[]).includes(id);
     /* fusion : posée sur une de mes créatures, la nouvelle garde son pouvoir et additionne les forces */
-    if(old){u.atk+=old.atk;u.hp+=old.hp;u.max+=old.max;u.shield+=old.shield;u.fused=true;if(d.fusionBonus){u.atk+=2;u.hp+=2;u.max+=2}log('Fusion : '+C[old.id].n+' + '+d.n,s,'ko')}
+    if(old){u.atk+=old.atk;u.hp+=old.hp;u.max+=old.max;u.shield+=old.shield;u.fused=true;if(d.fusionBonus){u.atk+=2;u.hp+=2;u.max+=2}ev(s,'fusion',1);log('Fusion : '+C[old.id].n+' + '+d.n,s,'ko')}
     if(b&&b.arriveShield)u.shield+=b.arriveShield;
     P.lanes[l]=u;render();ev(s,'creature',1);ev(s,'t_'+d.t,1);
     SND.play('whoosh');setTimeout(()=>SND.play('slam'),340);setTimeout(()=>SND.play(d.r==='L'||old?'legend':'spawn'),430);
@@ -210,7 +212,7 @@ async function playCard(s,i,l,q){
     P.bld[l]=mkBld(id);ev(s,'build',1);render();SND.play('slam');setTimeout(()=>SND.play('buff'),300);banner(d.n.toUpperCase());await sleep(1000);
   }else{const qq=d.mg?(q===0||q===1||q===2?q:1):1;banner(d.n.toUpperCase()+(d.mg?[' : RATÉ',' !',' : PARFAIT !'][qq]:' !'));SND.play('spell');render();ev(s,'spell',1);
     const foes=LANES().filter(i=>G[o].lanes[i]).map(i=>V.spot(o,i));
-    const spots=d.tgt==='enemy'||d.tgt==='ebld'?[V.spot(o,l)]:d.tgt==='ally'?[V.spot(s,l)]:(id==='pluie'||id==='prout')?(foes.length?foes:[V.center()]):id==='pizza'?[V.heroSpot(o)]:[V.heroSpot(s)];
+    const spots=d.tgt==='enemy'||d.tgt==='ebld'?[V.spot(o,l)]:d.tgt==='ally'||d.tgt==='trap'?[V.spot(s,l)]:(id==='pluie'||id==='prout')?(foes.length?foes:[V.center()]):id==='pizza'?[V.heroSpot(o)]:[V.heroSpot(s)];
     await sleep(350);await V.spell(id,spots,id==='meteor'||qq===2);await d.cast(s,l,qq)}
   await sleep(200);if(!G.over){G.busy=false;render()}
 }
@@ -222,6 +224,10 @@ async function endTurn(s){
     const d=C[c.id];
     for(let k=0;k<(d.double?2:1)&&!G.over&&G[s].lanes[l]===c;k++){
       const a=atkOf(s,l),t=G[o].lanes[l],tb=G[o].bld[l];
+      /* un piège attend sur ce couloir : il se déclenche avant le coup */
+      const tr=G[o].trap[l];if(tr){G[o].trap[l]=null;banner('PIÈGE : '+C[tr].n.toUpperCase());log('Piège : '+C[tr].n,o,'ko');SND.play('spell');ev(o,'trap',1);render();await sleep(800);
+        if(tr==='peau'){c.stun=true;float(slot(s,l),'Glisse !','');render();await sleep(400);break}
+        await hurt(s,l,tr==='miroir'?a:3);if(tr==='miroir'||G[s].lanes[l]!==c)break}
       SND.play('whoosh');await V.attack(s,l,d.vol||!t);
       if(d.vol||(!t&&!tb))await hurtH(o,a);
       else if(t){const before=t.hp,sh=t.shield;await hurt(o,l,a);
@@ -273,7 +279,9 @@ function finish(w,why){if(G.over)return;G.over=true;G.busy=true;render();if(type
     +(bet?`<div class="lvup ${win?'':'bad'}">Pari : ${win?'+':'-'}${bet} pièces</div>`:'')
     +(defiTxt?`<div class="story-win">${defiTxt}</div>`:'')+(storyTxt?`<div class="story-win">Chapitre terminé — ${storyTxt}</div>`:'')+up.map(u=>`<div class="lvup">Niveau ${u.lvl} — ${u.txt}</div>`).join('');
   if(win){const cols=['#e8443a','#ffd23f','#58d68d','#7fd4ff','#fff6e0'];for(let i=0;i<60;i++){const c=document.createElement('div');c.className='conf';c.style.background=cols[i%5];c.style.left=Math.random()*100+'vw';c.style.animationDuration=2+Math.random()*3+'s';c.style.animationDelay=Math.random()*1.5+'s';$('#fx').appendChild(c)}}
-  setTimeout(()=>{if(G&&G.over)$('#end').classList.remove('hide')},900)}
+  try{const lk=G[opp(ME)].seats[0].look;if(win){if(V.sad)V.sad()}else if(V.celebrate)V.celebrate(lk&&lk.cele||'bras')}catch(e){}
+  if(typeof rematchUI==='function')rematchUI();
+  setTimeout(()=>{if(G&&G.over)$('#end').classList.remove('hide')},win?900:2600)}
 
 /* ---------- émotes : une petite phrase que tout le monde voit ---------- */
 const EMOTES=['Bien joué !','Aïe…','Ha ha !','Tu vas voir…','Dépêche !','GG'];
@@ -312,6 +320,7 @@ function aiPick(s){
         sc+=Math.random();if(sc>best){best=sc;bl=l}}
       if(best>0)return[i,bl]}
     else if(d.k==='b'){let best=-1,bl=-1;for(let l=0;l<NL;l++){if(P.bld[l])continue;const sc=(P.lanes[l]?3:1)+Math.random();if(sc>best){best=sc;bl=l}}if(bl>=0)return[i,bl]}
+    else if(d.tgt==='trap'){const ls=LANES().filter(l=>!P.trap[l]).sort((x,y)=>(F.lanes[y]?1:0)-(F.lanes[x]?1:0));if(ls.length)return[i,ls[0]]}
     else switch(id){
       case 'claque':t=byAtk(foes.filter(f=>f.c.hp<=2&&!f.c.shield))[0]||byAtk(foes)[0];if(t)return[i,t.l];break;
       case 'meteor':t=byAtk(foes.filter(f=>f.c.atk>=3&&!f.c.shield))[0];if(t)return[i,t.l];break;

@@ -2,7 +2,7 @@
    à cette adresse (PeerJS). On voit qui est en ligne et on peut inviter en duel ou en 2 contre 2.
    Rien ne passe par un serveur à nous : les jeux se parlent directement. Seuls le pseudo, l'avatar et le code ami sont échangés. */
 const FR = {
-  peer: null, links: {}, ready: false, dup: false, onChange: () => { }, onInvite: () => { },
+  peer: null, links: {}, rooms: {}, myRoom: null, ready: false, dup: false, onChange: () => { }, onInvite: () => { },
   ABC: 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789',
   clean(c) { c = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return c.length === 6 ? c : null; },
   me() { return { code: S.d.fcode, name: S.d.name, avatar: S.d.avatar, w: S.d.wins | 0, l: S.d.losses | 0, lv: S.d.lvl | 0 }; },
@@ -37,7 +37,7 @@ const FR = {
     c.on('data', m => { c.last = Date.now(); this.data(c, m); });
     c.on('close', () => this.drop(c)); c.on('error', () => this.drop(c));
   },
-  drop(c) { try { c.close(); } catch (e) { } if (c.fcode && this.links[c.fcode] === c) { delete this.links[c.fcode]; this.onChange(); } },
+  drop(c) { try { c.close(); } catch (e) { } if (c.fcode && this.links[c.fcode] === c) { delete this.links[c.fcode]; delete this.rooms[c.fcode]; this.onChange(); } },
   data(c, m) {
     if (!m || typeof m !== 'object' || m.t === 'ping') return;
     if (m.t === 'hi' || m.t === 'add') {
@@ -55,9 +55,10 @@ const FR = {
       }
       delete f.pend; const num = (v, max) => Math.max(0, Math.min(max, v | 0)); f.w = num(m.w, 99999); f.l = num(m.l, 99999); f.lv = num(m.lv, 999); f.name = esc(m.name); f.avatar = AVATARS.includes(m.avatar) ? m.avatar : 'poulet'; S.save();
       if (!c.dialed) { c.fcode = code; if (!c.greeted) { c.greeted = true; c.send(Object.assign({ t: 'hi' }, this.me())); } }
-      this.links[code] = c; this.onChange(); return;
+      this.links[code] = c; if (this.myRoom) c.send(Object.assign({ t: 'room' }, this.myRoom)); this.onChange(); return;
     }
     const f = c.fcode && this.friend(c.fcode); if (!f || this.links[c.fcode] !== c) return;
+    if (m.t === 'room') { const room = String(m.room || ''); this.rooms[c.fcode] = /^[A-Z]{4}$/.test(room) ? { room, mode: m.mode === '2v2' ? '2v2' : m.mode === 'tour' ? 'tour' : '1v1' } : null; return this.onChange(); }
     if (m.t === 'invite') { const room = String(m.room || ''); if (!/^[A-Z]{4}$/.test(room)) return; this.onInvite(f, m.mode === '2v2' ? '2v2' : m.mode === 'tour' ? 'tour' : '1v1', room, c); }
     else if (m.t === 'no') toast(f.name + ' a refusé l\'invitation.');
     else if (m.t === 'busy') toast(f.name + ' est déjà en partie.');
@@ -72,5 +73,7 @@ const FR = {
   },
   remove(code) { S.d.friends = S.d.friends.filter(f => f.code !== code); S.save(); const c = this.links[code]; if (c) this.drop(c); this.onChange(); },
   invite(code, mode, room) { const c = this.links[code]; if (!c || !c.open) return false; c.send({ t: 'invite', mode, room }); return true; },
+  /* j'ouvre (ou je ferme) un groupe : mes amis en ligne voient un bouton « Rejoindre » */
+  room(mode, room) { this.myRoom = room ? { mode, room } : null; for (const k in this.links) { const c = this.links[k]; if (c.open) c.send({ t: 'room', mode, room: room || '' }); } },
   reply(c, t) { try { if (c && c.open) c.send({ t }); } catch (e) { } },
 };

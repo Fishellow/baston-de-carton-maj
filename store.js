@@ -8,7 +8,14 @@ const BACKS={classic:{n:'Classique',a:'#e8443a',b:'#ffd23f'},nuit:{n:'Nuit étoi
 const BODIES={bleu:{n:'Bleu'},rouge:{n:'Rouge étoile'},vert:{n:'Vert rayé'},violet:{n:'Violet éclair'},noir:{n:'Noir Boss'},rose:{n:'Rose cœur'}};
 const HATS={aucun:{n:'Aucun'},casquette:{n:'Casquette'},bonnet:{n:'Bonnet'},cowboy:{n:'Cow-boy'},chef:{n:'Toque'},viking:{n:'Casque à cornes'},couronne:{n:'Couronne'}};
 const HALOS={bleu:{n:'Bleu',c:0x4cc9ff},vert:{n:'Vert',c:0x7bd88f},or:{n:'Or',c:0xffc933},violet:{n:'Violet',c:0xb388ff},rouge:{n:'Rouge',c:0xff7b54},blanc:{n:'Blanc pur',c:0xffffff}};
-const TITLES=['Débutant','Bagarreur','Champion du Carton','Légende','Le Boss Final','Sauveur du Carton','Champion du tournoi','Légende de la saison'];
+const TITLES=['Débutant','Bagarreur','Champion du Carton','Légende','Le Boss Final','Sauveur du Carton','Champion du tournoi','Légende de la saison','Vétéran','Machine de guerre','Faucheur','Sorcier','Bâtisseur','Fusionneur','Piégeur'];
+/* succès : des objectifs au long cours. k = ce qu'on compte (le total est gardé dans S.d.tot), g = objectif */
+const ACH=[{k:'win',g:5,n:'5 victoires',c:50},{k:'win',g:25,n:'25 victoires',c:150,title:'Vétéran'},{k:'win',g:100,n:'100 victoires',c:400,title:'Machine de guerre'},{k:'game',g:50,n:'50 parties jouées',c:120},
+  {k:'ko',g:50,n:'50 créatures mises K.O.',c:80},{k:'ko',g:300,n:'300 créatures mises K.O.',c:250,title:'Faucheur'},{k:'creature',g:100,n:'100 créatures posées',c:80},{k:'spell',g:40,n:'40 sorts lancés',c:80,title:'Sorcier'},
+  {k:'build',g:25,n:'25 bâtiments construits',c:80,title:'Bâtisseur'},{k:'fusion',g:15,n:'15 fusions',c:100,title:'Fusionneur'},{k:'evo',g:30,n:'30 évolutions',c:100},{k:'legend',g:10,n:'10 potes légendaires posés',c:100},
+  {k:'trap',g:10,n:'10 pièges déclenchés',c:100,title:'Piégeur'},{k:'heroDmg',g:500,n:'500 dégâts au héros adverse',c:150}];
+/* célébrations : le geste de mon perso quand je gagne (c'est mon adversaire qui le voit) */
+const CELES={bras:{n:"Bras en l'air"},danse:{n:'Petite danse'},salut:{n:'Grand salut'},aucune:{n:'Aucune'}};
 /* saison : une route de récompenses qui repart à zéro chaque mois. [XP de saison à atteindre, récompense] */
 const SEASON=[[150,{c:60}],[300,{c:80}],[450,{f:1}],[600,{c:120}],[800,{f:1}],[1000,{c:150}],[1250,{f:2}],[1500,{c:300,title:'Légende de la saison'}]];
 const seasonKey=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)};
@@ -39,6 +46,7 @@ const S={d:null,
     d.own.avatar=(d.own.avatar||[]).filter(a=>AVATARS.includes(a));for(const a of AVATARS.slice(0,7))if(!d.own.avatar.includes(a))d.own.avatar.push(a);
     for(let l=2;l<=d.lvl;l++){const r=LEVELS[l];if(r)for(const u of [r.u,r.u2])if(u&&!d.own[u[0]].includes(u[1]))d.own[u[0]].push(u[1])}
     if(!d.own.avatar.includes(d.avatar))d.avatar='poulet';
+    d.tot=d.tot||{};d.ach=Array.isArray(d.ach)?d.ach:[];d.own.cele=Object.keys(CELES);if(!CELES[d.use.cele])d.use.cele='bras';
     d.sh=d.sh||{};d.fa=d.fa||{};for(const id in d.alt||{}){if(d.alt[id]==='foil')d.sh[id]=1;else d.fa[id]=1}d.alt={};d.custom=Array.isArray(d.custom)?d.custom.slice(0,8):[];if(!d.season||d.season.k!==seasonKey())d.season={k:seasonKey(),xp:0,got:0};
     d.own.body=Object.keys(BODIES);d.own.hat=Object.keys(HATS);if(!BODIES[d.use.body])d.use.body='bleu';if(!HATS[d.use.hat])d.use.hat='casquette';
     /* amis : mon code (tiré une fois pour toutes) et ma liste */
@@ -97,7 +105,9 @@ const PROG={
   roll(){const d=S.d;if(d.qday===dayKey()&&d.quests&&d.quests.every(q=>QUESTS[q.i]))return;const R=dayRng('q'),pick=[],keys=[];
     while(pick.length<3){const i=R()*QUESTS.length|0,k=QUESTS[i].k;if(pick.includes(i)||keys.includes(k))continue;pick.push(i);keys.push(k)}
     d.qday=dayKey();d.quests=pick.map(i=>({i,p:0,done:false}));d.gift=false;S.save()},
-  ev(k,n){const d=S.d;this.roll();let ch=false;for(const q of d.quests){const Q=QUESTS[q.i];if(Q.k!==k||q.done)continue;q.p=Math.min(Q.g,q.p+(n||1));ch=true;
+  ev(k,n){const d=S.d;this.roll();
+    /* total pour les succès */
+    d.tot[k]=(d.tot[k]||0)+(n||1);ACH.forEach((a,i)=>{if(a.k!==k||d.ach.includes(i)||d.tot[k]<a.g)return;d.ach.push(i);d.coins+=a.c||0;if(a.title&&!d.own.title.includes(a.title))d.own.title.push(a.title);if(typeof toast==='function')toast('Succès : '+a.n+' (+'+(a.c||0)+' pièces'+(a.title?', titre « '+a.title+' »':'')+')');S.save()});let ch=false;for(const q of d.quests){const Q=QUESTS[q.i];if(Q.k!==k||q.done)continue;q.p=Math.min(Q.g,q.p+(n||1));ch=true;
       if(q.p>=Q.g&&!q.ready){q.ready=true;SND.play('quest');if(typeof toast==='function')toast('Quête réussie : '+Q.n)}}
     if(ch)S.save()},
   claim(j){const d=S.d,q=d.quests[j],Q=QUESTS[q.i];if(!q.ready||q.done)return[];q.done=true;d.coins+=Q.r;SND.play('coin');const up=this.addXp(30);S.save();return up},

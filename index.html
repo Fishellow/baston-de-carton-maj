@@ -119,7 +119,7 @@
   <div class="top"><button class="btn sm" data-go="menu"><span data-ic="back"></span> Menu</button><h2 class="big">DUEL EN LIGNE</h2><div class="topr"><button class="btn sm yellow" data-go="lobby2">2 contre 2</button><button class="btn sm red" data-go="tour">Tournoi</button><button class="btn sm" data-go="friends">Amis</button></div></div>
   <div class="lob">
     <div class="panel lb"><b>1. Créer une partie</b><p>Tu reçois un code à donner à ton pote.</p>
-      <div class="tog"><button class="chip on" data-big="0">Classique</button><button class="chip" data-big="1">Grande Baston</button></div>
+      <div class="tog"><button class="chip on" data-big="0">Classique</button><button class="chip" data-big="1">Grande Baston</button><button class="chip" data-big="draft">Draft</button></div>
       <button class="btn red" id="bHost">Créer</button><div id="code" class="big"></div></div>
     <div class="panel lb"><b>2. Rejoindre</b><p>Tape le code de ton pote.</p><input id="jcode" maxlength="4" placeholder="CODE" spellcheck="false"><button class="btn blue" id="bJoin">Rejoindre</button></div>
   </div>
@@ -137,7 +137,7 @@
     <div class="panel l2main">
       <div class="l2code">Code de la table <b id="code2"></b></div>
       <div class="l2teams" id="l2teams"></div>
-      <div class="l2acts" id="l2acts"><button class="btn sm" id="b2Swap">Changer les équipes</button><button class="btn red" id="b2Go">Lancer la partie</button></div>
+      <div class="l2acts" id="l2acts"><button class="btn sm" id="b2Boss">Mode : 2 contre 2</button><button class="btn sm" id="b2Swap">Changer les équipes</button><button class="btn red" id="b2Go">Lancer la partie</button></div>
     </div>
     <div class="panel l2side"><div class="label">Inviter un ami</div><div id="l2friends"></div></div>
   </div>
@@ -236,7 +236,7 @@
 </div></div>
 <div id="fx"></div><div id="banner"></div><div id="toast"></div>
 <div id="packfx" class="hide"></div>
-<div class="screen hide" id="end"><div class="box"><h1 id="endT"></h1><p id="endP"></p><button id="again">Menu</button></div></div>
+<div class="screen hide" id="end"><div class="box"><h1 id="endT"></h1><p id="endP"></p><button id="rematch" class="hide">Revanche</button><button id="again">Menu</button></div></div>
 
 <script src="peerjs.min.js"></script>
 <script src="save.js"></script>

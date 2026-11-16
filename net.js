@@ -20,6 +20,6 @@ const NET={peer:null,conns:[],max:1,wrap:null,target:null,onData:()=>{},onClose:
   /* tournoi : wrap étiquette les messages d'un match, target les envoie à un seul joueur */
   send(o,except){if(this.wrap)o=this.wrap(o);for(const c of this.target?[this.target]:this.conns)if(c!==except&&c.open)c.send(o)},
   to(c,o){if(c&&c.open)c.send(o)},
-  stop(){this.wrap=null;this.target=null;this.send({t:'bye'});this.conns.forEach(c=>clearInterval(c.hb));const p=this.peer;this.peer=null;this.conns=[];if(p)setTimeout(()=>{try{p.destroy()}catch(e){}},200)},
+  stop(){this.wrap=null;this.target=null;if(typeof FR!=='undefined'&&FR.myRoom)FR.room(null);this.send({t:'bye'});this.conns.forEach(c=>clearInterval(c.hb));const p=this.peer;this.peer=null;this.conns=[];if(p)setTimeout(()=>{try{p.destroy()}catch(e){}},200)},
 };
 addEventListener('beforeunload',()=>NET.send({t:'bye'}));

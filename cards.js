@@ -99,6 +99,10 @@ const C={
  demolition:sp('Boule de Démolition','R',2,'',"Détruit un bâtiment ennemi (4 dégâts au quartier général).",'ebld',(s,l)=>{const b=G[opp(s)].bld[l];return b?hurtB(opp(s),l,C[b.id].qg?4:99):null}),
  potion:sp("Potion d'Évolution",'E',3,'','Fait évoluer une de tes créatures tout de suite.','ally',(s,l)=>evolve(s,l)),
  cri:sp('Cri de Guerre','R',2,'','Ta jauge de rage gagne 4.',null,s=>{G[s].rage=Math.min(RAGE_MAX,G[s].rage+4);float($('#hero-'+s),'Rage +4','r');render()}),
+ /* --- pièges : posés face cachée sur un de mes couloirs, ils se déclenchent quand une créature ennemie y attaque --- */
+ tapette:sp('Tapette à Souris','C',1,'','Piège : la prochaine créature qui attaque ce couloir prend 3 dégâts.','trap',(s,l)=>setTrap(s,l,'tapette')),
+ peau:sp('Peau de Banane','R',2,'',"Piège : la prochaine créature qui attaque ce couloir rate son coup et s'endort.",'trap',(s,l)=>setTrap(s,l,'peau')),
+ miroir:sp('Miroir Magique','E',3,'',"Piège : la prochaine attaque sur ce couloir est renvoyée à l'attaquant.",'trap',(s,l)=>setTrap(s,l,'miroir')),
  chaises:sp('Chaises Musicales','E',3,'🪑','Renvoie une créature ennemie dans la main de son propriétaire.','enemy',(s,l)=>bounce(opp(s),l)),
 };
 for(const id of['claque','pizza','meteor'])C[id].mg=1;

@@ -143,10 +143,10 @@ function tourHostData(m, c) { const H = TOUR.H; if (!m || !H) return; const i = 
 function tourHost(cb) { const d = myDeck(); if (TOUR.host && TOUR.code) { cb && cb(TOUR.code); return; }
   tourReset(); const code = rnd4(); TOUR.on = true; TOUR.host = true; TOUR.H = { round: 0, phase: 'lobby', champ: null, pairs: [], players: [Object.assign({ host: true, hp: 20, alive: true, board: rUnits([]) }, myCard())] }; TOUR.players = hPub(); tMsg('Création du tournoi…');
   NET.onClose = tourLeft; NET.onData = tourHostData;
-  NET.host(code, () => { TOUR.code = code; tMsg('Donne le code à tes potes ou invite tes amis. Les places vides seront des robots.'); drawTour(); cb && cb(code); }, e => { tourReset(); drawTour(); tMsg(errText(e)); }, 7); }
+  NET.host(code, () => { TOUR.code = code; FR.room('tour', code); tMsg('Donne le code à tes potes ou invite tes amis. Les places vides seront des robots.'); drawTour(); cb && cb(code); }, e => { tourReset(); drawTour(); tMsg(errText(e)); }, 7); }
 function tourGo() { const H = TOUR.H; if (!TOUR.host || TOUR.started || !TOUR.code) return; TOUR.n = H.players.length; const bots = botSeats();
   while (H.players.length < 6 && bots.length) { const b = bots.pop(); H.players.push({ name: b.name, avatar: b.avatar, body: b.body, hat: b.hat, bot: true, hp: 20, alive: true, board: rUnits([]), st: { gold: 0, board: [null, null, null, null], bench: [null, null, null, null] } }); }
-  TOUR.started = true; NET.max = 0; hPrep(); }
+  TOUR.started = true; NET.max = 0; FR.room(null); hPrep(); }
 
 /* ---------- côté invité ---------- */
 function tourJoin(code) { tourReset(); TOUR.on = true; drawTour(); tMsg('Connexion…'); let why = 'Le tournoi a été fermé.';

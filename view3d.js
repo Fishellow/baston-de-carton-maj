@@ -46,6 +46,8 @@ let LOOK={a:'#e8443a',b:'#ffd23f'},LOOKT={mat:'#1d2440',line:'#7ff6ff',w1:'#3b2d
 const backTex=()=>texCache.back||(texCache.back=canvasTex(128,180,(x,w,h)=>{x.fillStyle='#1b1035';rr(x,0,0,w,h,14);x.fill();x.fillStyle=LOOK.a;rr(x,7,7,w-14,h-14,10);x.fill();
   x.strokeStyle=LOOK.b;x.lineWidth=9;for(let i=-h;i<w;i+=26){x.beginPath();x.moveTo(i,h-7);x.lineTo(i+h,7);x.stroke()}x.fillStyle='#1b1035';x.beginPath();x.arc(w/2,h/2,30,0,7);x.fill();x.fillStyle=LOOK.b;x.font='44px "Lilita One",Fredoka,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('B',w/2,h/2+3)}));
 /* pastille de points de vie d'un bâtiment */
+/* le dos d'un piège caché sur une case */
+function trapTex(){return texCache.trap||(texCache.trap=canvasTex(96,96,x=>{x.fillStyle='#1b1035';rr(x,4,4,88,88,16);x.fill();x.strokeStyle='#ffd23f';x.lineWidth=5;x.setLineDash([9,7]);rr(x,10,10,76,76,12);x.stroke();x.fillStyle='#ffd23f';x.font='bold 54px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('?',48,52)}))}
 function hpTex(B,h){const cv=B.cv||(B.cv=document.createElement('canvas'));cv.width=112;cv.height=96;const x=cv.getContext('2d');x.clearRect(0,0,112,96);x.fillStyle='#1b1035';rr(x,2,2,108,92,24);x.fill();x.fillStyle='#2a9d8f';rr(x,9,9,94,78,18);x.fill();
   x.font='bold 62px "Lilita One",Fredoka,sans-serif';x.textAlign='center';x.textBaseline='middle';x.lineWidth=8;x.strokeStyle='#1b1035';x.strokeText(h,56,52);x.fillStyle='#fff';x.fillText(h,56,52);if(!B.tex)B.tex=new T3.CanvasTexture(cv);B.tex.needsUpdate=true;return B.tex}
 function statTex(u,a,h,up,dn){const cv=u.statCv||(u.statCv=document.createElement('canvas'));cv.width=256;cv.height=104;const x=cv.getContext('2d');x.clearRect(0,0,256,104);
@@ -190,6 +192,13 @@ Object.assign(api,{
   /* objets choisis dans le casier : couleur du halo et dos de carte */
   /* réglages : qualité de l'image et tremblements */
   setOpt(o){optShake=o.shake!==false;if(ren)ren.setPixelRatio(o.q==='low'?1:Math.min(2,devicePixelRatio));resize()},
+  /* le perso d'en face fête sa victoire (geste choisi par son joueur) ou baisse la tête quand il perd */
+  celebrate(k){const B=oppB;if(!B||!B.tete||k==='aucune')return;B.tete.userData.hit=1;const L=B.bras_l,R=B.bras_r,K=B.corps;
+    tween(3.4,q=>{const w=Math.sin(q*PI*9),up=Math.min(1,q*5)*(q>.86?(1-q)/.14:1);
+      if(k==='danse'){if(K)K.rotation.z=w*.1*up;if(L)L.rotation.x=-1.5*up*(w>0?1:.35);if(R)R.rotation.x=-1.5*up*(w>0?.35:1);B.tete.rotation.z=w*.22*up}
+      else if(k==='salut'){if(R){R.rotation.x=-2*up;R.rotation.z=w*.22*up}B.tete.rotation.x=.32*up}
+      else{if(L)L.rotation.x=-1.9*up;if(R)R.rotation.x=-1.9*up;B.tete.rotation.x=-.28*up;if(K)K.position.y=K.userData.y0!==undefined?K.userData.y0:(K.userData.y0=K.position.y),K.position.y=K.userData.y0+Math.abs(w)*1.2*up}}).then(()=>{B.tete.userData.hit=0})},
+  sad(){const B=oppB;if(!B||!B.tete)return;B.tete.userData.hit=1;tween(1.2,q=>{B.tete.rotation.x=.5*Math.sin(q*PI/2)})},
   /* le perso d'en face hoche la tête quand il parle */
   nod(){const h=oppB&&oppB.tete;if(!h||h.userData.hit)return;h.userData.hit=1;tween(.7,k=>{h.rotation.x=Math.sin(k*PI*3)*.16*(1-k)}).then(()=>{h.userData.hit=0})},
   setLook(o){SIDE.me=o.halo;if(o.perso&&JSON.stringify(o.perso)!==JSON.stringify(PERSO)){PERSO=o.perso;if(mode==='show')mode=''}if(o.back){LOOK=o.back;delete texCache.back}if(o.table&&o.table!==LOOKT){LOOKT=o.table;if(mode==='show')mode=''}},
@@ -229,6 +238,7 @@ Object.assign(api,{
           if(c.evo&&!u.evo){u.evo=true;try{evoGear(u)}catch(err){console.error(err)}const s0=u.sc,s1=s0+.22;tween(.6,q=>{u.sc=s0+(s1-s0)*back(q)});u.m.U.uFlash.value=1;u.disc.material.color.set(0xffd23f);shake=Math.max(shake,.2);for(let i=0;i<28;i++)puff(u.home.x+(Math.random()-.5)*.7,.3+Math.random()*1.1,u.home.z+(Math.random()-.5)*.5,i%2?0xffd23f:0xffffff,1.5)}}
         /* case occupée : son décor s'aplatit pour laisser voir la créature et le bâtiment */
         const T=tiles[k],occ=!!(c||b),dk=T.g.userData.deco;if(dk&&time>2.6&&T.occ!==occ){T.occ=occ;const y0=dk.scale.y,y1=occ?.2:1;tween(.35,q=>{const v=y0+(y1-y0)*q;dk.scale.y=v;dk.position.y=(1-v)*.118})}
+        const tp=!!(G[s].trap&&G[s].trap[l]);if(tp!==!!T.trapOn){T.trapOn=tp;if(tp&&!T.trapM)T.trapM=add(T.g,G0.plane,new T3.MeshBasicMaterial({map:trapTex(),transparent:true}),.52,.17,.78,.46,.46,1,-PI/2);if(T.trapM)T.trapM.visible=tp}
         T.hl.visible=!!okFn(s,l)}}
     const n=G[me==='p'?'e':'p'].hand.length;while(fan.length>n)scene.remove(fan.pop());
     while(fan.length<n){const m=add(scene,G0.plane,new T3.MeshBasicMaterial({map:backTex(),side:T3.DoubleSide}),0,0,0,.62,.86,1);fan.push(m)}
