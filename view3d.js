@@ -183,6 +183,8 @@ Object.assign(api,{
   /* objets choisis dans le casier : couleur du halo et dos de carte */
   /* réglages : qualité de l'image et tremblements */
   setOpt(o){optShake=o.shake!==false;if(ren)ren.setPixelRatio(o.q==='low'?1:Math.min(2,devicePixelRatio));resize()},
+  /* le perso d'en face hoche la tête quand il parle */
+  nod(){const h=oppB&&oppB.tete;if(!h||h.userData.hit)return;h.userData.hit=1;tween(.7,k=>{h.rotation.x=Math.sin(k*PI*3)*.16*(1-k)}).then(()=>{h.userData.hit=0})},
   setLook(o){SIDE.me=o.halo;if(o.perso&&JSON.stringify(o.perso)!==JSON.stringify(PERSO)){PERSO=o.perso;if(mode==='show')mode=''}if(o.back){LOOK=o.back;delete texCache.back}if(o.table&&o.table!==LOOKT){LOOKT=o.table;if(mode==='show')mode=''}},
   /* fond des menus : la pièce, la table, et quelques créatures qui posent */
   showcase(){if(mode==='show')return;mode='show';me='p';NLv=4;SC=1;bunits={};camHold=0;avatar=null;oppB=null;scene=new T3.Scene();tiles={};units={};anims=[];tweens=[];parts=[];fan=[];time=0;room();boardPlane();

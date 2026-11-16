@@ -73,12 +73,12 @@ function oppDeck(t){if(!t)return randomDeck();const base=randomDeck(),mine=IDS.f
 let BET=0;
 function drawBet(){document.querySelectorAll('[data-bet]').forEach(b=>{const v=+b.dataset.bet;b.classList.toggle('on',v===BET);b.disabled=v>S.d.coins})}
 document.querySelector('.bets').addEventListener('click',e=>{const b=e.target.closest('[data-bet]');if(!b||b.disabled)return;BET=+b.dataset.bet;drawBet()});
-function startSolo(o){const d=myDeck();if(!d)return;$('#modes').classList.add('hide');$('#hud').classList.add('hide');
+function startSolo(o){const d=o.mine||myDeck();if(!d)return;$('#modes').classList.add('hide');$('#hud').classList.add('hide');
   newGame(Object.assign({mode:'solo',me:'p',seed:Math.random()*1e9|0,decks:{p:d,e:o.deck},names:{p:S.d.name,e:o.n},faces:{p:S.d.avatar,e:o.f},titles:{p:S.d.use.title,e:o.ti},looks:{p:myLook(),e:rndLook()}},o.opt))}
 $('#bPlay').addEventListener('click',()=>{drawMenu();if(BET>S.d.coins)BET=0;drawBet();$('#modes').classList.remove('hide')});
 $('#bModesX').addEventListener('click',()=>$('#modes').classList.add('hide'));
 $('#modes').addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(!b)return;const m=b.dataset.mode;
-  if(m==='story')return show('story');if(m==='two')return startSolo2();const o=OPPS[Math.random()*OPPS.length|0];startSolo({n:o.n,f:o.f,ti:o.ti,deck:oppDeck(o.t),opt:{big:m==='big',bet:Math.min(BET,S.d.coins)}})});
+  if(m==='story')return show('story');if(m==='two')return startSolo2();if(m==='draft')return startDraft();if(m==='boss')return startBoss();const o=OPPS[Math.random()*OPPS.length|0];startSolo({n:o.n,f:o.f,ti:o.ti,deck:oppDeck(o.t),opt:{big:m==='big',bet:Math.min(BET,S.d.coins)}})});
 
 /* ---------- histoire ---------- */
 function drawStory(){const d=S.d;
@@ -213,7 +213,7 @@ const cleanDeck=d=>Array.isArray(d)&&d.length===20&&d.every(id=>typeof id==='str
 const cleanAct=a=>!a?null:a.t==='end'||a.t==='power'||a.t==='rage'?{t:a.t}:a.t==='choice'?{t:'choice',v:a.v==='nrj'?'nrj':'cards'}:
   a.t==='play'&&Number.isInteger(a.i)&&a.i>=0&&a.i<8&&Number.isInteger(a.l)&&a.l>=0&&a.l<6?{t:'play',i:a.i,l:a.l,q:a.q===0||a.q===2?a.q:1}:null;
 function goNet(me,seed,mine,their,them,big){
-  NET.onData=d=>{if(d&&d.t==='mg')return MG.remote(d);const a=cleanAct(d);if(a)remote(a)};
+  NET.onData=d=>{if(d&&d.t==='mg')return MG.remote(d);if(d&&d.t==='emo')return remoteEmote(d.k|0,0);const a=cleanAct(d);if(a)remote(a)};
   NET.onClose=()=>{if(G&&!G.over)finish(ME,'Ton pote a quitté la partie. Victoire par abandon.')};
   const o=me==='p'?'e':'p',ti=TITLES.includes(them.title)?them.title:'';
   $('#hud').classList.add('hide');
@@ -239,11 +239,30 @@ $('#bJoin').addEventListener('click',()=>{const code=$('#jcode').value.toUpperCa
 /* ---------- 2 contre 2 ----------
    4 places autour de la table : 0 et 2 font équipe (côté p), 1 et 3 aussi (côté e). L'ordre des tours est 0, 1, 2, 3. */
 const botSeats=()=>OPPS.slice().sort(()=>Math.random()-.5).map(o=>Object.assign({name:o.n,avatar:o.f,title:o.ti,deck:oppDeck(o.t),ai:true},rndLook()));
-const seatDefs=x=>{const d=g=>({deck:x[g].deck,name:x[g].name,face:x[g].avatar,title:x[g].title,look:cleanLook(x[g]),ai:!!x[g].ai,g});return{p:[d(0),d(2)],e:[d(1),d(3)]}};
+const seatOf=(x,g)=>({deck:x.deck,name:x.name,face:x.avatar,title:x.title,look:cleanLook(x),ai:!!x.ai,g});
+const seatDefs=x=>({p:[seatOf(x[0],0),seatOf(x[2],2)],e:[seatOf(x[1],1),seatOf(x[3],3)]});
 const cleanSeat=m=>{const deck=cleanDeck(m&&m.deck);return deck?{name:esc(m.name),avatar:AVATARS.includes(m.avatar)?m.avatar:'poulet',title:TITLES.includes(m.title)?m.title:'',deck,ai:!!m.ai,fc:FR.clean(m.fc),body:cleanLook(m).body,hat:cleanLook(m).hat}:null};
 /* tout seul : moi + un robot contre deux robots */
 function startSolo2(){const d=myDeck();if(!d)return;$('#modes').classList.add('hide');$('#hud').classList.add('hide');const b=botSeats();
   newGame({mode:'solo',me:'p',seat:0,seed:Math.random()*1e9|0,big:true,seats:seatDefs([Object.assign({deck:d},myCard()),b[0],b[1],b[2]])})}
+/* boss à deux : moi + un robot contre un seul gros boss (70 PV, les meilleures cartes du jeu) */
+function bossBig(){const pick=(k,n)=>IDS.filter(id=>C[id].k===k).sort((a,b)=>RW[C[b].r]-RW[C[a].r]||Math.random()-.5).slice(0,n);return pick('c',13).concat(pick('s',5),pick('b',2))}
+function startBoss(){const d=myDeck();if(!d)return;$('#modes').classList.add('hide');$('#hud').classList.add('hide');
+  const boss={name:'Le Grand Lessiveur',avatar:'ogre',title:'Boss',deck:bossBig(),ai:true,body:'noir',hat:'couronne'};
+  newGame({mode:'solo',me:'p',seat:0,seed:Math.random()*1e9|0,big:true,hpE:70,seats:{p:[seatOf(Object.assign({deck:d},myCard()),0),seatOf(botSeats()[0],2)],e:[seatOf(boss,1)]}})}
+/* draft : 20 fois de suite, 3 cartes au hasard (les rares sortent moins souvent), j'en garde une ; puis duel contre un robot */
+let DR=null;
+function draftOffer(){const out=[],cr=DR.picks.filter(id=>C[id].k==='c').length,needC=cr<DR.picks.length*.6;
+  for(let guard=0;out.length<3&&guard<200;guard++){const x=Math.random()*100,r=x<3?'L':x<14?'E':x<42?'R':'C',pool=IDS.filter(id=>C[id].r===r&&!out.includes(id)&&(out.length||!needC||C[id].k==='c')&&DR.picks.filter(p=>p===id).length<RAR[r].max);
+    if(pool.length)out.push(pool[Math.random()*pool.length|0])}return out}
+function drawDraft(){const n=k=>DR.picks.filter(id=>C[id].k===k).length;$('#drN').textContent=DR.picks.length+1;
+  $('#drOffer').innerHTML=DR.offer.map(id=>'<div class="gc" data-dr="'+id+'">'+cardHTML(id)+'</div>').join('');
+  $('#drSum').textContent='Ton deck : '+n('c')+' créature'+(n('c')>1?'s':'')+' · '+n('s')+' sort'+(n('s')>1?'s':'')+' · '+n('b')+' bâtiment'+(n('b')>1?'s':'')}
+function startDraft(){DR={picks:[]};DR.offer=draftOffer();$('#modes').classList.add('hide');$('#draft').classList.remove('hide');drawDraft()}
+$('#bDraftX').addEventListener('click',()=>{DR=null;$('#draft').classList.add('hide')});
+$('#drOffer').addEventListener('click',e=>{const el=e.target.closest('[data-dr]');if(!el||!DR||!DR.offer.includes(el.dataset.dr))return;DR.picks.push(el.dataset.dr);SND.play('card');
+  if(DR.picks.length<20){DR.offer=draftOffer();return drawDraft()}
+  const mine=DR.picks,o=OPPS[Math.random()*OPPS.length|0];DR=null;$('#draft').classList.add('hide');startSolo({n:o.n,f:o.f,ti:o.ti,deck:randomDeck(),mine,opt:{}})});
 const L2={host:false,code:'',slots:[null,null,null,null],you:0};
 const l2Msg=t=>$('#l2msg').textContent=t;
 function l2Reset(){L2.host=false;L2.code='';L2.slots=[null,null,null,null];L2.you=0}
@@ -274,6 +293,7 @@ function join2(code){const d=myDeck();if(!d)return;l2Reset();drawL2();l2Msg('Con
 function goNet2(g,seed,seats,host){
   if(host)NET.max=0;
   NET.onData=(d,c)=>{if(!d)return;if(!host&&d.t==='left')return toast(esc(d.name)+' est parti : un robot le remplace.');
+    if(d.t==='emo'){const k=d.k|0;if(host){if(!c||!c.g)return;NET.send({t:'emo',k,g:c.g},c);return remoteEmote(k,c.g)}const w=d.g|0;if(w<0||w>3||w===g)return;return remoteEmote(k,w)}
     const a=cleanAct(d);if(!a)return;
     /* l'hôte sait qui parle (la connexion), il colle le bon numéro et fait suivre aux autres */
     if(host){if(!c||!c.g)return;a.g=c.g;NET.send(a,c)}else{const k=d.g|0;if(k<0||k>3||k===g)return;a.g=k}
@@ -295,10 +315,13 @@ $('#l2friends').addEventListener('click',e=>{const b=e.target.closest('[data-inv
 /* ---------- amis ---------- */
 function drawFriends(){$('#fcode').textContent=S.d.fcode;
   if(!$('#frmsg').dataset.keep)$('#frmsg').textContent=FR.dup?'Le jeu est déjà ouvert dans une autre fenêtre : les amis ne marchent que dans une seule.':FR.ready?'':'Connexion…';
-  $('#flist').innerHTML=S.d.friends.map(f=>{const on=FR.online(f.code);
-    return `<div class="fr ${on?'on':''}"><span class="face">${faceHTML(f.avatar)}</span><div class="frn"><b>${f.name}</b><small>${on?'En ligne':f.pend?'En attente (il doit ouvrir le jeu)':'Hors ligne'}</small></div>
+  const rows=S.d.friends.map(f=>({f,w:f.w|0})).concat([{me:1,w:S.d.wins|0}]).sort((x,y)=>y.w-x.w);
+  $('#flist').innerHTML=rows.map((r,i)=>{const rk='<span class="frk">'+(i+1)+'</span>';
+    if(r.me)return `<div class="fr on me">${rk}<span class="face">${faceHTML(S.d.avatar)}</span><div class="frn"><b>${esc(S.d.name)} (toi)</b><small>Niveau ${S.d.lvl} · ${S.d.wins} victoire${S.d.wins>1?'s':''} · ${S.d.losses} défaite${S.d.losses>1?'s':''}</small></div></div>`;
+    const f=r.f,on=FR.online(f.code),st=f.lv?' · Niveau '+f.lv+' · '+(f.w|0)+' victoire'+((f.w|0)>1?'s':''):'';
+    return `<div class="fr ${on?'on':''}">${rk}<span class="face">${faceHTML(f.avatar)}</span><div class="frn"><b>${f.name}</b><small>${(on?'En ligne':f.pend?'En attente (il doit ouvrir le jeu)':'Hors ligne')+st}</small></div>
       <button class="btn sm red" data-inv="1v1" data-c="${f.code}" ${on?'':'disabled'}>Duel</button><button class="btn sm yellow" data-inv="2v2" data-c="${f.code}" ${on?'':'disabled'}>2 contre 2</button>
-      <button class="frx" data-del="${f.code}" title="Retirer de la liste">×</button></div>`}).join('')||'<p class="dkempty">Pas encore d\'ami ici.<br>Échangez vos codes, puis ajoute-le à gauche.</p>'}
+      <button class="frx" data-del="${f.code}" title="Retirer de la liste">×</button></div>`}).join('')+(S.d.friends.length?'':'<p class="dkempty">Pas encore d\'ami ici.<br>Échangez vos codes, puis ajoute-le à gauche.</p>')}
 function drawFrTag(){const n=S.d.friends.filter(f=>FR.online(f.code)).length,t=$('#frTag');if(t){t.textContent=n?n+' en ligne':'';t.classList.toggle('show',!!n)}}
 FR.onChange=()=>{drawFrTag();if(CUR==='friends')drawFriends();if(CUR==='lobby2'&&L2.code)drawL2()};
 $('#bAdd').addEventListener('click',()=>{const err=FR.add($('#fadd').value),m=$('#frmsg');m.dataset.keep=1;m.textContent=err||'Ajouté. Il apparaîtra en ligne dès que son jeu sera ouvert.';if(!err){$('#fadd').value='';SND.play('quest')}else SND.play('error');setTimeout(()=>{delete m.dataset.keep},6000);drawFriends()});

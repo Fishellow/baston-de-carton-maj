@@ -5,7 +5,7 @@ const FR = {
   peer: null, links: {}, ready: false, dup: false, onChange: () => { }, onInvite: () => { },
   ABC: 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789',
   clean(c) { c = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return c.length === 6 ? c : null; },
-  me() { return { code: S.d.fcode, name: S.d.name, avatar: S.d.avatar }; },
+  me() { return { code: S.d.fcode, name: S.d.name, avatar: S.d.avatar, w: S.d.wins | 0, l: S.d.losses | 0, lv: S.d.lvl | 0 }; },
   friend(code) { return S.d.friends.find(f => f.code === code); },
   online(code) { const c = this.links[code]; return !!(c && c.open); },
   start() {
@@ -44,7 +44,7 @@ const FR = {
         f = { code, name: 'Pote', avatar: 'poulet' }; S.d.friends.push(f);
         if (typeof toast === 'function') toast(esc(m.name) + ' est maintenant ton ami.');
       }
-      delete f.pend; f.name = esc(m.name); f.avatar = AVATARS.includes(m.avatar) ? m.avatar : 'poulet'; S.save();
+      delete f.pend; const num = (v, max) => Math.max(0, Math.min(max, v | 0)); f.w = num(m.w, 99999); f.l = num(m.l, 99999); f.lv = num(m.lv, 999); f.name = esc(m.name); f.avatar = AVATARS.includes(m.avatar) ? m.avatar : 'poulet'; S.save();
       if (!c.dialed) { c.fcode = code; if (!c.greeted) { c.greeted = true; c.send(Object.assign({ t: 'hi' }, this.me())); } }
       this.links[code] = c; this.onChange(); return;
     }

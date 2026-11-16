@@ -50,10 +50,23 @@
       <button class="btn mode" data-mode="classic"><span data-ic="grid4"></span>Classique<small>4 couloirs, 20 points de vie. Rapide.</small></button>
       <button class="btn mode yellow" data-mode="big"><span data-ic="grid6"></span>Grande Baston<small>6 couloirs, 30 points de vie. Plus de place pour les bâtiments.</small></button>
       <button class="btn mode" data-mode="two"><span data-ic="team"></span>2 contre 2<small>Toi et un robot contre deux robots, sur la grande table.</small></button>
+      <button class="btn mode" data-mode="draft"><span data-ic="cards"></span>Draft<small>Tu choisis 20 cartes, une par une, parmi 3. Pas besoin de collection.</small></button>
+      <button class="btn mode" data-mode="boss"><span data-ic="trophy"></span>Boss à deux<small>Toi et un robot contre un énorme boss à 70 points de vie.</small></button>
       <button class="btn mode" data-mode="story"><span data-ic="flag"></span>Histoire<small id="storyTag">8 chapitres, des boss et des récompenses.</small></button>
     </div>
     <div class="bets"><span>Pari sur ta victoire :</span><button class="chip on" data-bet="0">Aucun</button><button class="chip" data-bet="20">20 pièces</button><button class="chip" data-bet="50">50 pièces</button><button class="chip" data-bet="100">100 pièces</button><span class="small">doublé si tu gagnes, perdu sinon (pas en Histoire)</span></div>
     <button class="btn sm" id="bModesX">Retour</button>
+  </div>
+</div>
+
+<!-- draft : 20 choix parmi 3 cartes -->
+<div id="draft" class="hide">
+  <div class="panel drbox">
+    <div class="label">Draft · carte <span id="drN">1</span> / 20</div>
+    <div class="drq">Choisis une carte</div>
+    <div id="drOffer"></div>
+    <div class="small" id="drSum"></div>
+    <button class="btn sm" id="bDraftX">Abandonner le draft</button>
   </div>
 </div>
 
@@ -143,7 +156,7 @@
       <button class="btn green" id="bAdd">Ajouter</button>
       <p class="small" id="frmsg"></p>
     </div>
-    <div class="panel frlist"><div class="label">Tes amis</div><div id="flist"></div></div>
+    <div class="panel frlist"><div class="label">Classement des potes</div><div id="flist"></div></div>
   </div>
 </div>
 
@@ -160,6 +173,8 @@
     <div class="sidebtns"><button class="btn sm" id="bSet2" title="Réglages" data-ic="gear"></button><button class="btn sm" id="quit">Abandonner</button></div>
   </div>
   <div id="choice" class="hide"><div class="panel chbox"><div class="label">Début de ton tour</div><div class="chs"><button class="btn yellow" data-ch="cards">2 cartes<small>Pioche 2 cartes</small></button><button class="btn blue" data-ch="nrj">1 carte + 1 énergie<small>Pour jouer plus gros ce tour</small></button></div></div></div>
+  <div id="bubbles"></div>
+  <div id="emo"><button class="btn sm" id="bEmo">Parler</button><div id="emoList" class="panel hide"></div></div>
   <div id="mg" class="hide"></div>
 </div>
 

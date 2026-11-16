@@ -145,7 +145,7 @@ function newGame(o){
   if(o.big)for(const P of[p,e])P.bld[NL>>1]=mkBld('qg');
   for(const P of[p,e])for(const st of P.seats)for(let i=0;i<4;i++)st.hand.push(st.deck.pop());
   $('#heroes').innerHTML=`<div class="hero panel top" id="hero-${O}"></div><div class="hero panel bot" id="hero-${ME}"></div>`;
-  $('#log').innerHTML='';$('#fx').innerHTML='';$('#loupe').innerHTML='';
+  $('#log').innerHTML='';$('#fx').innerHTML='';$('#bubbles').innerHTML='';$('#emoList').classList.add('hide');$('#loupe').innerHTML='';
   document.querySelectorAll('.scr').forEach(x=>x.classList.add('hide'));$('#app').classList.remove('hide');fit();
   SND.music('duel');
   V.start(ME,{p:p.terr,e:e.terr},G.faces[O],NL,G[O].seats[0].look);
@@ -256,6 +256,18 @@ function finish(w,why){if(G.over)return;G.over=true;G.busy=true;render();if(type
   if(win){const cols=['#e8443a','#ffd23f','#58d68d','#7fd4ff','#fff6e0'];for(let i=0;i<60;i++){const c=document.createElement('div');c.className='conf';c.style.background=cols[i%5];c.style.left=Math.random()*100+'vw';c.style.animationDuration=2+Math.random()*3+'s';c.style.animationDelay=Math.random()*1.5+'s';$('#fx').appendChild(c)}}
   setTimeout(()=>$('#end').classList.remove('hide'),900)}
 
+/* ---------- émotes : une petite phrase que tout le monde voit ---------- */
+const EMOTES=['Bien joué !','Aïe…','Ha ha !','Tu vas voir…','Dépêche !','GG'];
+let EMOT=0;
+function showEmote(who,k,name){const t=EMOTES[k|0];if(!t||!G)return;const b=document.createElement('div');b.className='bub '+who;b.textContent=(who==='me'?'':name+' : ')+t;
+  $('#bubbles').querySelectorAll('.bub.'+who).forEach(x=>x.remove());$('#bubbles').appendChild(b);SND.play('click');if(who==='foe'&&V.nod)V.nod();setTimeout(()=>b.remove(),2800)}
+function sayEmote(k){if(!G||G.over||Date.now()-EMOT<2500)return;EMOT=Date.now();showEmote('me',k);if(MODE==='net')NET.send({t:'emo',k,g:MYG})}
+/* reçue d'un autre joueur (g = sa place à la table en 2 contre 2) */
+function remoteEmote(k,g){if(!G)return;const s=G.two?(g%2?'e':'p'):opp(ME),st=G[s].seats[G.two?g>>1:0];if(st)showEmote(s===ME?'mate':'foe',k,st.name)}
+$('#emoList').innerHTML=EMOTES.map((t,i)=>'<button class="chip" data-emo="'+i+'">'+t+'</button>').join('');
+$('#bEmo').addEventListener('click',()=>$('#emoList').classList.toggle('hide'));
+$('#emoList').addEventListener('click',e=>{const b=e.target.closest('[data-emo]');if(!b)return;$('#emoList').classList.add('hide');sayEmote(+b.dataset.emo)});
+
 /* ---------- actions (les miennes et celles du pote en ligne) ---------- */
 function act(a){if(LOCK||!G||G.busy||G.over||!myTurn())return;LOCK=true;if(MODE==='net')NET.send(G.two?Object.assign({g:MYG},a):a);Q=Q.then(()=>apply(ME,a,MYSEAT)).finally(()=>LOCK=false)}
 /* action d'un autre joueur. En 2 contre 2, a.g dit qui (0 à 3 : pair = côté p, impair = côté e) */
@@ -302,6 +314,8 @@ async function aiDo(s,a){if(MODE==='net')NET.send(Object.assign({g:G[s].seats[G[
 async function aiTurn(s){
   if(G.aiFor===G.turn)return;G.aiFor=G.turn;
   const P=G[s],turn=G.turn,ok=()=>!G.over&&G.active===s&&G.turn===turn;
+  /* de temps en temps, le robot lâche une petite phrase */
+  if(MODE==='solo'&&Math.random()<.16)showEmote(s===ME?'mate':'foe',Math.random()*EMOTES.length|0,G.names[s]);
   await sleep(900);if(!ok())return;
   if(G.phase==='choice')await aiDo(s,{t:'choice',v:P.hand.length<=3?'cards':'nrj'});
   if(!ok())return;G.busy=true;render();await sleep(700);
