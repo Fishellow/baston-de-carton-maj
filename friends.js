@@ -20,13 +20,13 @@ const FR = {
     let p; try { p = this.peer = new Peer('bdcf-' + S.d.fcode, PEEROPT); } catch (e) { return this.again(); }
     p.on('open', () => { if (this.peer !== p) return; this.ready = true; this.dup = false; this.tries = 0; this.scan(); this.onChange(); });
     p.on('connection', c => { if (this.peer === p) this.wire(c); });
-    p.on('disconnected', () => { if (this.peer !== p) return; this.ready = false; this.onChange(); setTimeout(() => { if (this.peer !== p || p.destroyed) return; try { p.reconnect(); } catch (e) { this.again(); } }, 3000); });
+    p.on('disconnected', () => { if (this.peer !== p) return; this.ready = false; this.onChange(); this.again(); });
     /* « peer-unavailable » = cet ami n'est pas en ligne : rien à faire. Le reste : on repart de zéro. */
     p.on('error', e => { if (this.peer !== p || !e || e.type === 'peer-unavailable') return; this.lastErr = e.type; if (e.type === 'unavailable-id' || e.type === 'network' || e.type === 'server-error' || e.type === 'socket-error' || e.type === 'socket-closed') this.again(e.type === 'unavailable-id'); });
   },
   again(taken) {
     const p = this.peer; this.peer = null; this.ready = false; this.tries++; this.dup = !!taken && this.tries >= 6; for (const k in this.links) delete this.links[k];
-    try { p && p.destroy(); } catch (e) { } this.onChange(); clearTimeout(this.rt); this.rt = setTimeout(() => { if (!this.peer) this.open(); }, Math.min(20000, 3000 + this.tries * 2000));
+    try { p && p.destroy(); } catch (e) { } this.onChange(); clearTimeout(this.rt); this.rt = setTimeout(() => { if (!this.peer) this.open(); }, [4, 10, 20, 40, 80, 160, 300][Math.min(6, this.tries - 1)] * 1000);
   },
   /* essaie de joindre les amis pas encore connectés */
   scan() { if (!this.ready || !this.peer || this.peer.disconnected) return; for (const f of S.d.friends) { const c = this.links[f.code]; if (c && !c.open && Date.now() - c.last > 9000) this.drop(c); if (!this.links[f.code]) this.dial(f.code, !!f.pend); } },

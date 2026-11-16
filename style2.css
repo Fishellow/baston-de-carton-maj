@@ -440,3 +440,4 @@ input{background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius
 #rbar .rslot{background:#fff6e0cc}
 #tend{padding:18px 24px;display:flex;flex-direction:column;gap:8px;min-width:340px}#tend.hide{display:none}
 #app.auto #side{display:none}
+#app.royprep .hero.bot{display:none}
