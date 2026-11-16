@@ -4,6 +4,9 @@ const AVATARS=['poulet','souris','grenouille','pigeon','piment','raclette','chau
 /* ---------- objets à débloquer ---------- */
 const BACKS={classic:{n:'Classique',a:'#e8443a',b:'#ffd23f'},nuit:{n:'Nuit étoilée',a:'#1d2440',b:'#7ff6ff'},fromage:{n:'Fromage',a:'#ffd23f',b:'#f4a300'},
   slip:{n:'Marais',a:'#58d68d',b:'#fff6e0'},or:{n:'Or massif',a:'#ffc933',b:'#fff3b0'},lave:{n:'Lave',a:'#e8443a',b:'#2a1b3d'}};
+/* le perso assis à la table : sweats et chapeaux (modèles perso_* et hat_*) */
+const BODIES={bleu:{n:'Bleu'},rouge:{n:'Rouge étoile'},vert:{n:'Vert rayé'},violet:{n:'Violet éclair'},noir:{n:'Noir Boss'},rose:{n:'Rose cœur'}};
+const HATS={aucun:{n:'Aucun'},casquette:{n:'Casquette'},bonnet:{n:'Bonnet'},cowboy:{n:'Cow-boy'},chef:{n:'Toque'},viking:{n:'Casque à cornes'},couronne:{n:'Couronne'}};
 const HALOS={bleu:{n:'Bleu',c:0x4cc9ff},vert:{n:'Vert',c:0x7bd88f},or:{n:'Or',c:0xffc933},violet:{n:'Violet',c:0xb388ff},rouge:{n:'Rouge',c:0xff7b54},blanc:{n:'Blanc pur',c:0xffffff}};
 const TITLES=['Débutant','Bagarreur','Champion du Carton','Légende','Le Boss Final','Sauveur du Carton'];
 /* récompense de chaque niveau : c = pièces, f = paquets offerts, u / u2 = [type, id] débloqué */
@@ -32,6 +35,7 @@ const S={d:null,
     d.own.avatar=(d.own.avatar||[]).filter(a=>AVATARS.includes(a));for(const a of AVATARS.slice(0,7))if(!d.own.avatar.includes(a))d.own.avatar.push(a);
     for(let l=2;l<=d.lvl;l++){const r=LEVELS[l];if(r)for(const u of [r.u,r.u2])if(u&&!d.own[u[0]].includes(u[1]))d.own[u[0]].push(u[1])}
     if(!d.own.avatar.includes(d.avatar))d.avatar='poulet';
+    d.own.body=Object.keys(BODIES);d.own.hat=Object.keys(HATS);if(!BODIES[d.use.body])d.use.body='bleu';if(!HATS[d.use.hat])d.use.hat='casquette';
     /* amis : mon code (tiré une fois pour toutes) et ma liste */
     if(!/^[A-Z0-9]{6}$/.test(d.fcode||''))d.fcode=Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.random()*32|0]).join('');
     d.friends=Array.isArray(d.friends)?d.friends.filter(f=>f&&/^[A-Z0-9]{6}$/.test(f.code||'')).slice(0,30):[];

@@ -313,3 +313,12 @@ input{background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius
 .mates{display:flex;gap:5px;margin:2px 0}
 .mates i{font-style:normal;font-size:11px;font-weight:700;padding:1px 7px;border:2px solid var(--ink);border-radius:8px;background:var(--paper);opacity:.55}
 .mates i.on{background:var(--yellow);opacity:1}
+
+/* casier : photos des sweats et chapeaux */
+.lsnap{display:block;width:74px;height:74px;object-fit:contain;margin:0 auto}
+
+/* main bien lisible : beaucoup de cartes = cartes plus petites, sans se chevaucher ; celle survolée passe devant en grand */
+#hand.many .card{margin:0 2px;zoom:.86}
+#hand.lots .card{zoom:.75}
+#hand.many .card:hover{transform:translateY(-26px) scale(1.22);z-index:8}
+#hand.many .card.sel{transform:translateY(-32px) scale(1.22);z-index:9}

@@ -107,7 +107,7 @@ function render(){
   const mine=myTurn()&&!G.busy&&!G.over,myMain=mine&&G.phase==='main',H=G[ME],MS=H.seats[MYSEAT],pk=powerOf(MS.face);
   /* ma main à moi, même pendant le tour de mon coéquipier */
   $('#hand').innerHTML=MS.hand.map((id,i)=>cardHTML(id,null,false,(mine&&i===G.sel?'sel ':'')+(C[id].c>MS.energy?'no':''))).join('');
-  $('#hand').classList.toggle('many',MS.hand.length>5);
+  $('#hand').classList.toggle('many',MS.hand.length>5);$('#hand').classList.toggle('lots',MS.hand.length>6);
   [...$('#hand').children].forEach((el,i)=>el.dataset.i=i);
   $('#go').disabled=!myMain;
   $('#pow').disabled=!myMain||!canPower(ME);$('#pow').innerHTML=`${POWERS[pk].n}<small>${POWERS[pk].x} · 2 énergies</small>`;
@@ -133,11 +133,11 @@ addEventListener('resize',fit);
 function newGame(o){
   MODE=o.mode;ME=o.me;MYSEAT=o.seat|0;AIRUN=o.mode==='solo'||!!o.host;LOCK=false;MGBUSY=false;NL=o.big?6:4;const R=rng(o.seed),O=opp(ME),hp=o.seats?40:o.big?30:20;
   /* les sièges : 1 par côté en duel, 2 en 2 contre 2. g = numéro du joueur à la table (0 à 3), ai = joué par le robot */
-  const defs=o.seats||{p:[{deck:o.decks.p,name:o.names.p,face:o.faces.p,title:o.titles&&o.titles.p,g:0}],e:[{deck:o.decks.e,name:o.names.e,face:o.faces.e,title:o.titles&&o.titles.e,g:1,ai:o.mode==='solo'}]};
+  const defs=o.seats||{p:[{deck:o.decks.p,name:o.names.p,face:o.faces.p,title:o.titles&&o.titles.p,look:o.looks&&o.looks.p,g:0}],e:[{deck:o.decks.e,name:o.names.e,face:o.faces.e,title:o.titles&&o.titles.e,look:o.looks&&o.looks.e,g:1,ai:o.mode==='solo'}]};
   MYG=defs[ME][MYSEAT].g|0;
   const terrs=()=>{const t=shuffle(['fromage','sauce','slip','nuage'],R);return NL>4?shuffle(t.concat(shuffle(['fromage','sauce','slip','nuage'],R).slice(0,NL-4)),R):t};
   const mk=(ds,hp)=>{const P={hp,maxHp:hp,rage:0,cur:0,started:false,lanes:Array(NL).fill(null),bld:Array(NL).fill(null),terr:terrs(),
-      seats:ds.map(d=>({name:d.name,face:d.face,title:d.title||'',ai:!!d.ai,g:d.g|0,energy:0,maxE:1,powUsed:false,deck:shuffle(d.deck.slice(),R),hand:[]}))};
+      seats:ds.map(d=>({name:d.name,face:d.face,look:d.look||null,title:d.title||'',ai:!!d.ai,g:d.g|0,energy:0,maxE:1,powUsed:false,deck:shuffle(d.deck.slice(),R),hand:[]}))};
     for(const k of['energy','maxE','powUsed','deck','hand'])Object.defineProperty(P,k,{get(){return this.seats[this.cur][k]},set(v){this.seats[this.cur][k]=v}});return P};
   const p=mk(defs.p,hp),e=mk(defs.e,o.hpE||hp),view=k=>({get p(){return p.seats[p.cur][k]},get e(){return e.seats[e.cur][k]}});
   G={p,e,names:view('name'),faces:view('face'),titles:view('title'),two:p.seats.length>1,active:null,sel:null,busy:true,over:false,uid:0,capE:o.big?8:7,big:!!o.big,story:o.story,turn:0,phase:'',bet:o.bet|0,R:rng(o.seed^0x2f6e2b1)};
@@ -148,7 +148,7 @@ function newGame(o){
   $('#log').innerHTML='';$('#fx').innerHTML='';$('#loupe').innerHTML='';
   document.querySelectorAll('.scr').forEach(x=>x.classList.add('hide'));$('#app').classList.remove('hide');fit();
   SND.music('duel');
-  V.start(ME,{p:p.terr,e:e.terr},G.faces[O],NL);
+  V.start(ME,{p:p.terr,e:e.terr},G.faces[O],NL,G[O].seats[0].look);
   V.onPick=(s,l)=>{if(okFor(s,l)&&!LOCK)tryPlay(G.sel,l)};
   V.onHover=h=>{if(!h)return;const c=G[h.s].lanes[h.l],b=G[h.s].bld[h.l];$('#loupe').innerHTML=c?cardHTML(c.id,c,false):b?cardHTML(b.id,{bhp:b.hp},false):terrHTML(G[h.s].terr[h.l])};
   render();

@@ -14,6 +14,7 @@ function tween(d,fn,delay=0){return new Promise(res=>tweens.push({t:-delay,d,fn,
 const lam=(c,o={})=>new T3.MeshLambertMaterial({color:c,flatShading:true,...o});
 const bas=(c,o={})=>new T3.MeshBasicMaterial({color:c,...o});
 function add(par,g,m,x,y,z,sx=1,sy=sx,sz=sx,rx=0,ry=0,rz=0){const o=new T3.Mesh(g,m);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.rotation.set(rx,ry,rz);par.add(o);return o}
+let PERSO=null;
 const G0=M.geo,circle=new T3.CircleGeometry(.5,24);
 
 /* ---------- textures dessinées ---------- */
@@ -110,7 +111,7 @@ function terrain(type,g){
 
 /* ---------- unités (créatures) ---------- */
 function spawn(s,l,c){
-  const d=C[c.id],tint=s===me?SIDE.me:SIDE.foe,m=M.build(c.id,tint),u={uid:c.uid,id:c.id,s,l,m,tint,g:new T3.Group(),ph:Math.random()*6,k:'',atk:0,sc:c.fused?1.22:1.05,evo:false};
+  const d=C[c.id],tint=s===me?SIDE.me:SIDE.foe,m=M.build(c.id,tint),u={uid:c.uid,id:c.id,s,l,m,tint,g:new T3.Group(),ph:Math.random()*6,k:'',atk:0,sc:(c.fused?1.22:1.05)*(NLv>4?.9:1),evo:false};
   const x=LX(l),z=RZ(s);u.g.position.set(x,.13*SC,z);u.g.scale.setScalar(SC);u.home=u.g.position.clone();scene.add(u.g);
   m.g.position.set(0,m.fly,-.12);m.g.scale.setScalar(1.05);u.g.add(m.g);m.U.uBaseY.value=.13*SC;
   u.card=add(u.g,G0.plane,new T3.MeshBasicMaterial({map:cardTex(c.id)}),0,2.5,.72,.62,.86,1,-PI/2);
@@ -153,6 +154,14 @@ function frame(now,timer){if(!running)return;if(!timer)requestAnimationFrame(fra
   cam.position.x+=Math.sin(time*.35)*.004;shake*=Math.pow(.001,dt);
   const sk=optShake?shake:0;cam.lookAt(look.x+(Math.random()-.5)*sk,look.y+(Math.random()-.5)*sk,look.z);
   ren.render(scene,cam)}
+/* le perso assis en face : sweat + chapeau choisis par le joueur ; son avatar est collé à plat sur le devant de la tête */
+function seatPerso(lk,face,z){lk=lk||{};const id=window.BB&&BB['perso_'+lk.body]?'perso_'+lk.body:'adversaire',plain=x=>{x.U.uHolo.value=0;x.U.uReveal.value=999;x.U.uOut.value=.03;return x};
+  const m=plain(M.build(id,0xffffff));m.g.position.set(0,-.05,z);scene.add(m.g);oppB=m.bones||{};
+  if(id!=='adversaire'&&oppB.tete&&BB['hat_'+lk.hat]){const h=plain(M.build('hat_'+lk.hat,0xffffff));h.g.scale.setScalar(16);h.g.position.set(0,-26,16);oppB.tete.add(h.g)}
+  avatar=new T3.Mesh(G0.plane,new T3.MeshBasicMaterial({map:sprite(face,1).material.map,transparent:true,alphaTest:.04}));avatarY=0;
+  if(oppB.face){avatarS=31;oppB.face.add(avatar);avatar.position.set(0,-1.5,1.2);avatar.rotation.x=-.1}else{avatarS=1.6;avatar.position.set(0,2.7,z+.6);scene.add(avatar)}
+  avatar.scale.setScalar(avatarS);
+  anims.push(t=>{const h=oppB.tete;if(h&&!h.userData.hit){h.rotation.z=Math.sin(t*.8)*.05;h.rotation.x=Math.sin(t*1.1)*.03}})}
 function resize(){if(!ren)return;const w=innerWidth,h=innerHeight;ren.setSize(w,h,false);cam.aspect=w/h;cam.fov=w/h<1.25?56:w/h<1.6?49:44;
   if(mode==='show')cam.clearViewOffset();else cam.setViewOffset(w,h,Math.min(125,w*.1),h*.02,w,h);cam.updateProjectionMatrix()}
 function project(x,y,z){const v=new T3.Vector3(x,y,z).project(cam);return{left:(v.x+1)/2*innerWidth,top:(1-v.y)/2*innerHeight,width:0,height:0}}
@@ -174,26 +183,24 @@ Object.assign(api,{
   /* objets choisis dans le casier : couleur du halo et dos de carte */
   /* réglages : qualité de l'image et tremblements */
   setOpt(o){optShake=o.shake!==false;if(ren)ren.setPixelRatio(o.q==='low'?1:Math.min(2,devicePixelRatio));resize()},
-  setLook(o){SIDE.me=o.halo;if(o.back){LOOK=o.back;delete texCache.back}if(o.table&&o.table!==LOOKT){LOOKT=o.table;if(mode==='show')mode=''}},
+  setLook(o){SIDE.me=o.halo;if(o.perso&&JSON.stringify(o.perso)!==JSON.stringify(PERSO)){PERSO=o.perso;if(mode==='show')mode=''}if(o.back){LOOK=o.back;delete texCache.back}if(o.table&&o.table!==LOOKT){LOOKT=o.table;if(mode==='show')mode=''}},
   /* fond des menus : la pièce, la table, et quelques créatures qui posent */
   showcase(){if(mode==='show')return;mode='show';me='p';NLv=4;SC=1;bunits={};camHold=0;avatar=null;oppB=null;scene=new T3.Scene();tiles={};units={};anims=[];tweens=[];parts=[];fan=[];time=0;room();boardPlane();
     const ids=IDS.filter(i=>C[i].k==='c'&&window.BB&&BB[i]).sort(()=>Math.random()-.5).slice(0,4);
     ids.forEach((id,i)=>{const tint=i%2?SIDE.foe:SIDE.me,m=M.build(id,tint),o=i-(ids.length-1)/2,px=[-4.8,-3.1,3.1,4.8][i],pz=[1.4,0,0,1.4][i];m.U.uReveal.value=999;m.U.uBaseY.value=-99;m.g.position.set(px,.08+m.fly,pz);m.g.scale.setScalar(1.3);scene.add(m.g);
       const d=add(scene,circle,bas(tint,{transparent:true,opacity:.4,blending:T3.AdditiveBlending,depthWrite:false}),px,.09,pz,1.5,1.5,1,-PI/2);
       anims.push(t=>{m.U.uTime.value=t;M.pose(m,t,i*1.7,0);m.g.rotation.y=-o*.22+Math.sin(t*.7+i)*.2;if(m.fly)m.g.position.y=.08+m.fly+Math.sin(t*1.6+i)*.09;d.material.opacity=.3+.12*Math.sin(t*3+i);for(const x of m.extra)if(x.userData.spin)x.rotation.y=t*2.5})});
+    if(PERSO&&window.BB&&BB.adversaire)seatPerso(PERSO,PERSO.face,-4.55);
     cam.position.set(0,9,15);look.set(0,1,0);resize();if(!running){running=true;last=performance.now();requestAnimationFrame(frame)}},
-  start(mySide,terr,oppFace,n){mode='duel';me=mySide;oppB=null;NLv=n||4;SC=NLv>4?.76:1;scene=new T3.Scene();tiles={};units={};bunits={};anims=[];tweens=[];parts=[];fan=[];time=0;room();boardPlane();
+  start(mySide,terr,oppFace,n,oppLook){mode='duel';me=mySide;oppB=null;NLv=n||4;SC=NLv>4?.76:1;scene=new T3.Scene();tiles={};units={};bunits={};anims=[];tweens=[];parts=[];fan=[];time=0;room();boardPlane();
     for(const s of['p','e'])for(let l=0;l<NLv;l++){const g=new T3.Group();g.position.set(LX(l),0,RZ(s));g.scale.setScalar(SC);scene.add(g);
-      const deco=terrain(terr[s][l],g);deco.scale.setScalar(.001);tween(.7,k=>deco.scale.setScalar(Math.max(.001,back(k))),.5+l*.14+(s===me?.3:0));
+      const deco=terrain(terr[s][l],g);deco.scale.setScalar(.001);g.userData.deco=deco;tween(.7,k=>deco.scale.setScalar(Math.max(.001,back(k))),.5+l*.14+(s===me?.3:0));
       const pick=add(g,G0.box,new T3.MeshBasicMaterial({visible:false}),0,.8,0,1.7,1.6,2.2);pick.userData={s,l};
       const hl=add(g,G0.plane,bas(0xffffff,{transparent:true,opacity:.5,blending:T3.AdditiveBlending,depthWrite:false}),0,.14,0,1.62,2.18,1,-PI/2);hl.visible=false;
       tiles[key(s,l)]={g,pick,hl}}
     /* l'adversaire assis en face */
-    if(window.BB&&BB.adversaire){const m=M.build('adversaire',0xffffff);m.U.uHolo.value=0;m.U.uReveal.value=999;m.U.uOut.value=.03;m.g.position.set(0,-.05,-4.55);scene.add(m.g);avatarY=2.72;avatarS=1.75;avatar=sprite(oppFace,avatarS);avatar.material.depthTest=true;avatar.position.set(0,avatarY,-4.05);scene.add(avatar);
-      /* le visage suit la tête, qui dodeline et encaisse les coups */
-      oppB=m.bones||{};if(oppB.face){oppB.face.add(avatar);avatar.position.set(0,0,0);avatarY=0;avatarS*=16;avatar.scale.setScalar(avatarS)}
-      anims.push(t=>{const h=oppB.tete;if(h&&!h.userData.hit){h.rotation.z=Math.sin(t*.8)*.05;h.rotation.x=Math.sin(t*1.1)*.03}})}
-    else{add(scene,G0.sph,lam(0x3a86ff),0,-.3,-6.4,3.4,4.6,2.2);avatarY=2.05;avatarS=2.6;avatar=sprite(oppFace,avatarS);avatar.material.depthTest=true;avatar.position.set(0,avatarY,-5.6);scene.add(avatar);
+    if(window.BB&&BB.adversaire)seatPerso(oppLook,oppFace,-4.55);
+    else{oppB=null;add(scene,G0.sph,lam(0x3a86ff),0,-.3,-6.4,3.4,4.6,2.2);avatarY=2.05;avatarS=2.6;avatar=sprite(oppFace,avatarS);avatar.material.depthTest=true;avatar.position.set(0,avatarY,-5.6);scene.add(avatar);
     add(scene,G0.sph,lam(0x3a86ff),-1.9,.3,-4.6,.8);add(scene,G0.sph,lam(0x3a86ff),1.9,.3,-4.6,.8)}
     cam.position.set(0,15,17);look.set(0,0,0);goal.p.copy(base.p);goal.l.copy(base.l);resize();
     if(!running){running=true;last=performance.now();requestAnimationFrame(frame)}},
@@ -203,7 +210,7 @@ Object.assign(api,{
         /* bâtiment : au fond de la case, en hologramme */
         const b=G[s].bld&&G[s].bld[l],bu=bunits[k];
         if(bu&&(!b||b.uid!==bu.uid)){scene.remove(bu.bs);for(let i=0;i<18;i++)puff(bu.x+(Math.random()-.5)*.6,.3+Math.random()*.6,bu.z+(Math.random()-.5)*.4,i%2?0xffffff:0xc9a26b,1.3);scene.remove(bu.m.g);bu.m.g.traverse(o=>{if(o.material&&o.material.dispose)o.material.dispose()});delete bunits[k]}
-        if(b&&!bunits[k]){const tint=s===me?SIDE.me:SIDE.foe,m=M.build(b.id,tint),bx=LX(l),bz=RZ(s)-.74*SC;m.g.position.set(bx,.13*SC,bz);m.g.scale.setScalar((C[b.id].qg?1.05:.78)*SC);m.U.uBaseY.value=.13*SC;m.U.uReveal.value=0;scene.add(m.g);
+        if(b&&!bunits[k]){const tint=s===me?SIDE.me:SIDE.foe,m=M.build(b.id,tint),bx=LX(l),bz=RZ(s)-.74*SC;m.g.position.set(bx,.13*SC,bz);m.g.scale.setScalar((C[b.id].qg?.9:.72)*SC);m.U.uBaseY.value=.13*SC;m.U.uReveal.value=0;scene.add(m.g);
           const bs=new T3.Sprite(new T3.SpriteMaterial({transparent:true,depthTest:false}));bs.scale.set(.42*SC,.36*SC,1);bs.position.set(bx+.56*SC,.34*SC,bz+.1);bs.renderOrder=30;scene.add(bs);bunits[k]={uid:b.uid,m,bs,hp:-1,x:bx,z:bz};
           tween(.7,q=>{m.U.uReveal.value=q*1.6;m.U.uTime.value=time}).then(()=>{m.U.uReveal.value=99});shake=Math.max(shake,.14);for(let i=0;i<16;i++)puff(bx+(Math.random()-.5)*.8,.25,bz+(Math.random()-.5)*.5,i%2?0xffffff:tint,.8);anims.push(t=>{m.U.uTime.value=t})}
         if(b&&bunits[k]&&bunits[k].hp!==b.hp){const B=bunits[k];B.hp=b.hp;B.bs.material.map=hpTex(B,b.hp)}
@@ -211,7 +218,9 @@ Object.assign(api,{
         if(c&&!u)u=spawn(s,l,c);
         if(u){const d=C[c.id],kk=c.shownAtk+'/'+c.hp+'/'+c.max;if(kk!==u.k){u.k=kk;u.stat.material.map=statTex(u,c.shownAtk,c.hp,c.shownAtk>d.a,c.hp<c.max)}u.zz.visible=!!c.stun;u.sh.visible=!!c.shield;u.po.visible=!!c.poison;
           if(c.evo&&!u.evo){u.evo=true;const s0=u.sc,s1=s0+.22;tween(.6,q=>{u.sc=s0+(s1-s0)*back(q)});u.m.U.uFlash.value=1;u.disc.material.color.set(0xffd23f);shake=Math.max(shake,.2);for(let i=0;i<28;i++)puff(u.home.x+(Math.random()-.5)*.7,.3+Math.random()*1.1,u.home.z+(Math.random()-.5)*.5,i%2?0xffd23f:0xffffff,1.5)}}
-        tiles[k].hl.visible=!!okFn(s,l)}}
+        /* case occupée : son décor s'aplatit pour laisser voir la créature et le bâtiment */
+        const T=tiles[k],occ=!!(c||b),dk=T.g.userData.deco;if(dk&&time>2.6&&T.occ!==occ){T.occ=occ;const y0=dk.scale.y,y1=occ?.2:1;tween(.35,q=>{const v=y0+(y1-y0)*q;dk.scale.y=v;dk.position.y=(1-v)*.118})}
+        T.hl.visible=!!okFn(s,l)}}
     const n=G[me==='p'?'e':'p'].hand.length;while(fan.length>n)scene.remove(fan.pop());
     while(fan.length<n){const m=add(scene,G0.plane,new T3.MeshBasicMaterial({map:backTex(),side:T3.DoubleSide}),0,0,0,.62,.86,1);fan.push(m)}
     fan.forEach((m,i)=>{const o=i-(n-1)/2;m.position.set(o*.42,.5-Math.abs(o)*.04,-3.75);m.rotation.set(-.5,0,-o*.1)})},
