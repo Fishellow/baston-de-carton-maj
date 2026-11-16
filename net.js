@@ -1,11 +1,13 @@
 /* Parties en ligne : connexion directe entre joueurs (PeerJS / WebRTC) avec un code de partie.
    Duel : 1 hôte + 1 invité. 2 contre 2 : 1 hôte + jusqu'à 3 invités, tout passe par l'hôte qui fait suivre. */
+/* toujours en connexion sécurisée (https / wss) : la version non sécurisée est bloquée par certaines box et antivirus */
+const PEEROPT={host:'0.peerjs.com',port:443,secure:true};
 const NET={peer:null,conns:[],max:1,wrap:null,target:null,onData:()=>{},onClose:()=>{},
   get conn(){return this.conns[0]||null},
-  host(code,onReady,onErr,max){this.stop();this.max=max||1;this.peer=new Peer('bdc-'+code);
+  host(code,onReady,onErr,max){this.stop();this.max=max||1;this.peer=new Peer('bdc-'+code,PEEROPT);
     this.peer.on('open',onReady);this.peer.on('error',onErr);
     this.peer.on('connection',c=>{if(this.conns.length>=this.max){c.on('open',()=>{try{c.send({t:'full'});}catch(e){}setTimeout(()=>c.close(),400)});return}this.conns.push(c);this.wire(c)})},
-  join(code,onOpen,onErr){this.stop();this.max=1;this.peer=new Peer();this.peer.on('error',onErr);
+  join(code,onOpen,onErr){this.stop();this.max=1;this.peer=new Peer(PEEROPT);this.peer.on('error',onErr);
     this.peer.on('open',()=>{const c=this.peer.connect('bdc-'+code,{reliable:true});this.conns.push(c);this.wire(c,onOpen)})},
   wire(c,onOpen){let dead=false;const lost=()=>{if(dead)return;dead=true;clearInterval(c.hb);const i=this.conns.indexOf(c);if(i<0)return;this.conns.splice(i,1);this.onClose(c)};
     c.on('open',()=>{c.last=Date.now();

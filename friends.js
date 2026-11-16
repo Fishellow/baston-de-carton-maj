@@ -9,19 +9,28 @@ const FR = {
   friend(code) { return S.d.friends.find(f => f.code === code); },
   online(code) { const c = this.links[code]; return !!(c && c.open); },
   start() {
-    if (typeof Peer === 'undefined' || this.peer) return;
-    try { this.peer = new Peer('bdcf-' + S.d.fcode); } catch (e) { return; }
-    this.peer.on('open', () => { this.ready = true; this.dup = false; this.scan(); this.onChange(); });
-    this.peer.on('connection', c => this.wire(c));
-    this.peer.on('disconnected', () => { this.ready = false; this.onChange(); setTimeout(() => { try { if (this.peer && !this.peer.destroyed) this.peer.reconnect(); } catch (e) { } }, 4000); });
-    /* « peer-unavailable » = cet ami n'est pas en ligne : rien à faire. « unavailable-id » = le jeu est déjà ouvert ailleurs avec mon code. */
-    this.peer.on('error', e => { if (e && e.type === 'unavailable-id') { this.dup = true; this.ready = false; this.onChange(); } });
-    setInterval(() => this.scan(), 15000);
+    if (typeof Peer === 'undefined' || this.timers) return; this.timers = true; this.tries = 0; this.open();
+    setInterval(() => this.scan(), 12000);
     setInterval(() => { for (const k in this.links) { const c = this.links[k]; if (c.open) { try { c.send({ t: 'ping' }); } catch (e) { } if (Date.now() - c.last > 40000) this.drop(c); } } }, 10000);
+    /* en fermant le jeu, on libère tout de suite mon adresse (sinon elle reste prise un moment) */
+    addEventListener('beforeunload', () => { try { this.peer && this.peer.destroy(); } catch (e) { } });
+  },
+  /* ouvre mon adresse d'ami. Si ça rate (adresse encore prise juste après une relance du jeu, coupure internet…), on réessaie tout seul. */
+  open() {
+    let p; try { p = this.peer = new Peer('bdcf-' + S.d.fcode, PEEROPT); } catch (e) { return this.again(); }
+    p.on('open', () => { if (this.peer !== p) return; this.ready = true; this.dup = false; this.tries = 0; this.scan(); this.onChange(); });
+    p.on('connection', c => { if (this.peer === p) this.wire(c); });
+    p.on('disconnected', () => { if (this.peer !== p) return; this.ready = false; this.onChange(); setTimeout(() => { if (this.peer !== p || p.destroyed) return; try { p.reconnect(); } catch (e) { this.again(); } }, 3000); });
+    /* « peer-unavailable » = cet ami n'est pas en ligne : rien à faire. Le reste : on repart de zéro. */
+    p.on('error', e => { if (this.peer !== p || !e || e.type === 'peer-unavailable') return; if (e.type === 'unavailable-id' || e.type === 'network' || e.type === 'server-error' || e.type === 'socket-error' || e.type === 'socket-closed') this.again(e.type === 'unavailable-id'); });
+  },
+  again(taken) {
+    const p = this.peer; this.peer = null; this.ready = false; this.tries++; this.dup = !!taken && this.tries >= 6; for (const k in this.links) delete this.links[k];
+    try { p && p.destroy(); } catch (e) { } this.onChange(); clearTimeout(this.rt); this.rt = setTimeout(() => { if (!this.peer) this.open(); }, Math.min(20000, 3000 + this.tries * 2000));
   },
   /* essaie de joindre les amis pas encore connectés */
-  scan() { if (!this.ready || !this.peer || this.peer.disconnected) return; for (const f of S.d.friends) if (!this.links[f.code]) this.dial(f.code, !!f.pend); },
-  dial(code, first) { if (!this.ready) return false; const c = this.peer.connect('bdcf-' + code, { reliable: true }); c.fcode = code; c.dialed = true; c.first = !!first; this.wire(c); return true; },
+  scan() { if (!this.ready || !this.peer || this.peer.disconnected) return; for (const f of S.d.friends) { const c = this.links[f.code]; if (c && !c.open && Date.now() - c.last > 9000) this.drop(c); if (!this.links[f.code]) this.dial(f.code, !!f.pend); } },
+  dial(code, first) { if (!this.ready || !this.peer) return false; const c = this.peer.connect('bdcf-' + code, { reliable: true }); c.fcode = code; c.dialed = true; c.first = !!first; this.wire(c); this.links[code] = this.links[code] || c; return true; },
   wire(c) {
     c.last = Date.now();
     c.on('open', () => { c.last = Date.now(); if (c.dialed) c.send(Object.assign({ t: c.first ? 'add' : 'hi' }, this.me())); });

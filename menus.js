@@ -219,7 +219,7 @@ function goNet(me,seed,mine,their,them,big){
   const o=me==='p'?'e':'p',ti=TITLES.includes(them.title)?them.title:'';
   $('#hud').classList.add('hide');
   newGame({mode:'net',me,seed,big:!!big,decks:{[me]:mine,[o]:their},names:{[me]:S.d.name,[o]:esc(them.name)},faces:{[me]:S.d.avatar,[o]:AVATARS.includes(them.avatar)?them.avatar:'poulet'},titles:{[me]:S.d.use.title,[o]:ti},looks:{[me]:myLook(),[o]:cleanLook(them)}})}
-const netErr=e=>lobbyMsg(e&&e.type==='peer-unavailable'?'Code introuvable. Vérifie avec ton pote.':e&&e.type==='unavailable-id'?'Ce code est déjà pris, réessaie.':'Connexion impossible. Vérifie ton internet.');
+const netErr=e=>lobbyMsg(e&&e.type==='peer-unavailable'?'Code introuvable. Vérifie avec ton pote.':e&&e.type==='unavailable-id'?'Ce code est déjà pris, réessaie.':'Connexion impossible. Vérifie ton internet, puis réessaie.'+(e&&e.type?' ('+e.type+')':''));
 const rnd4=()=>Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.random()*24|0]).join('');
 const errText=e=>e&&e.type==='peer-unavailable'?'Code introuvable. Vérifie avec ton pote.':e&&e.type==='unavailable-id'?'Ce code est déjà pris, réessaie.':'Connexion impossible. Vérifie ton internet.';
 const myCard=()=>({name:S.d.name,avatar:S.d.avatar,title:S.d.use.title,fc:S.d.fcode,body:S.d.use.body,hat:S.d.use.hat});
