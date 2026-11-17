@@ -384,10 +384,23 @@ FR.start();drawFrTag();
 setTimeout(()=>{if(!FR.ready)netProbe().then(p=>{window.__frp='Test : '+p+(FR.lastErr?' · '+FR.lastErr:'');if(CUR==='friends')drawFriends()})},15000);
 
 /* ---------- mise à jour automatique (seulement dans le jeu installé : window.BDC vient de preload.js) ---------- */
-function updReady(v){const el=$('#ver');el.textContent='';const b=document.createElement('button');b.className='btn sm green';b.textContent='Mise à jour prête : relancer le jeu';b.addEventListener('click',()=>BDC.relaunch());el.appendChild(b);toast('Mise à jour '+v+' téléchargée.')}
+const UPDURL='https://fishellow.github.io/baston-de-carton-maj/';
+/* mise à jour demandée par le bouton : dès qu'elle est téléchargée, le jeu se relance tout seul pour l'appliquer */
+function updReady(v){if(STORE.get('bdcAutoRe')){STORE.del('bdcAutoRe');toast('Mise à jour '+v+' prête : le jeu se relance…');return setTimeout(()=>BDC.relaunch(),1200)}const el=$('#ver');el.textContent='';const b=document.createElement('button');b.className='btn sm green';b.textContent='Mise à jour prête : relancer le jeu';b.addEventListener('click',()=>BDC.relaunch());el.appendChild(b);toast('Mise à jour '+v+' téléchargée.')}
 if(window.BDC){BDC.info().then(i=>{$('#ver').textContent='Version '+i.version;if(i.ready)updReady(i.ready)});
+  /* si rien n'est arrivé au bout d'une minute, on oublie la demande (pour ne pas relancer par surprise plus tard) */
+  setTimeout(()=>STORE.del('bdcAutoRe'),60000);
   BDC.onUpdate((what,d)=>{if(what==='progress'&&!$('#ver button'))$('#ver').textContent='Téléchargement de la mise à jour… '+d+' %';if(what==='ready')updReady(d)})}
 
+/* vérifier la mise à jour sans fermer le jeu */
+$('#bCheckUpd').addEventListener('click',async()=>{const b=$('#bCheckUpd');if(!window.BDC)return toast('Ce bouton marche dans le jeu installé.');b.disabled=true;b.textContent='Recherche…';
+  try{const i=await BDC.info();
+    if(i.ready){toast('Mise à jour déjà téléchargée : le jeu se relance…');return setTimeout(()=>BDC.relaunch(),1000)}
+    const m=await (await fetch(UPDURL+'manifest.json?t='+Date.now(),{cache:'no-store'})).json();
+    if(m&&m.build>i.build){STORE.set('bdcAutoRe','1');toast('Mise à jour '+m.version+' trouvée. Le jeu se relance tout seul pour l\'installer…');return setTimeout(()=>BDC.relaunch(),1600)}
+    toast('Tu as déjà la dernière version ('+i.version+').')}
+  catch(e){toast('Impossible de vérifier. Regarde ta connexion internet.')}
+  b.disabled=false;b.textContent='Vérifier la mise à jour'});
 /* fermer le jeu depuis le menu */
 document.querySelector('#bQuitApp').addEventListener('click',()=>{try{NET.stop()}catch(e){}window.close()});
 show('menu');
