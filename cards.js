@@ -1,6 +1,6 @@
 /* Toutes les cartes du jeu. Rareté : C commune, R rare, E épique, L légendaire. */
 /* les 4 terrains : une créature posée sur son propre terrain gagne +1 attaque (pas d'autre effet) */
-const T={fromage:{n:'Plaine de Fromage'},sauce:{n:'Volcan à Sauce'},slip:{n:'Marais du Slip'},nuage:{n:'Nuage Mou'},pote:{n:'Pote légendaire'}};
+const T={fromage:{n:'Plaine de Fromage'},sauce:{n:'Volcan à Sauce'},slip:{n:'Marais du Slip'},nuage:{n:'Nuage Mou'},tele:{n:'Plateau Télé'},pote:{n:'Pote légendaire'}};
 /* pouvoirs de héros : 1 fois par tour, 2 énergies. Ils dépendent de l'avatar. */
 const POWERS={draw:{n:'Bonne pioche',x:'Pioche 1 carte'},dmg:{n:'Coup de boule',x:'1 dégât au héros adverse'},heal:{n:'Petit goûter',x:'Soigne ton héros de 2'},shield:{n:'Couvercle',x:'Bouclier 1 à ta créature la plus forte'}};
 const POWER_OF={poulet:'draw',pigeon:'draw',ovni:'draw',licorne:'draw',dragon:'dmg',piment:'dmg',kebab:'dmg',ogre:'dmg',grenouille:'heal',canard:'heal',raclette:'heal',vache:'heal',baleine:'heal',souris:'shield',chaussette:'shield',fantome:'shield',mouton:'shield',roi:'shield'};
@@ -84,6 +84,16 @@ const C={
  herisson:cr('Hérisson Grognon','slip','R',3,1,4,'','Épines : la créature qui le tape prend 1 dégât.',{thorns:1}),
  perroquet:cr('Perroquet Copieur','nuage','R',3,2,2,'',"Arrivée : copie l'attaque de la créature d'en face.",{play:(s,l)=>{const f=G[opp(s)].lanes[l],c=G[s].lanes[l];if(f&&c&&f.atk>c.atk){c.atk=f.atk;float(slot(s,l),'Copié !','g');render()}}}),
  aigle:cr('Aigle Royal','nuage','E',5,4,4,'',"Vol. Arrivée : 3 dégâts au bâtiment d'en face.",{vol:1,play:(s,l)=>hurtB(opp(s),l,3)}),
+ /* --- 7e série : le Plateau Télé (personnages de dessins animés du samedi matin, version maison) --- */
+ aventurier:cr('Le Gamin Aventurier','tele','C',2,2,3,'','Arrivée : +2 / +2 si son Chien Caoutchouc est déjà là.',{play:(s,l)=>{if(G[s].lanes.some(c=>c&&c.id==='elastique'))buff(s,l,2,2)}}),
+ elastique:cr('Le Chien Caoutchouc','tele','R',3,2,4,'',"S'étire : tape aussi les créatures des couloirs voisins (1 dégât).",{wide:1}),
+ geai:cr('Le Geai Glandeur','tele','C',2,3,2,'','Glandeurs : +2 attaque à côté du Raton Flemmard.',{buddy:'raton'}),
+ raton:cr('Le Raton Flemmard','tele','C',2,2,3,'','Glandeurs : +2 attaque à côté du Geai Glandeur.',{buddy:'geai'}),
+ bricolos:cr('Les Frères Bricolo','tele','E',4,3,4,'','Arrivée : construisent un bâtiment au hasard sur leur couloir.',{play:async(s,l)=>{if(G[s].bld[l])return;const bs=Object.keys(C).filter(b=>C[b].k==='b'&&!C[b].hidden&&!C[b].custom),id=bs[G.R()*bs.length|0];G[s].bld[l]=mkBld(id);log(C[id].n+' est construit',s);SND.play('slam');render();await sleep(700)}}),
+ montre:cr('Le Gamin à la Montre','tele','R',3,2,3,'','Début de ton tour : se transforme (+1 attaque, +1 vie ou un Bouclier, au hasard).',{morph:1}),
+ trouillard:cr('Le Chien Trouillard','tele','C',2,1,4,'','Courage : +4 attaque quand ton héros a 10 PV ou moins.',{brave:1}),
+ canape:cr('La Famille Canapé','tele','E',5,3,6,'','Chaque coup encaissé : 1 dégât au héros ennemi.',{family:1}),
+ savant:cr('Papy Savant et Fiston','tele','E',4,3,3,'',"Arrivée : un portail renvoie la créature d'en face dans la main de son joueur.",{play:(s,l)=>bounce(opp(s),l)}),
  /* --- bâtiments --- */
  mur:bd('Mur de Cartons','pote','C',1,'Aucun effet. Mais il encaisse.',{bh:7}),
  infirmerie:bd('Infirmerie','slip','R',3,'Début de ton tour : soigne ton héros de 1.',{bh:4,startHeal:1}),

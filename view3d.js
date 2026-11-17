@@ -2,7 +2,7 @@
 const V=(function(){
 const T3=THREE,PI=Math.PI;T3.ColorManagement.enabled=false;
 const SIDE={me:0x4cc9ff,foe:0xff5d8f};let optShake=true,camHold=0,avatarY=2.05,avatarS=2.6,oppB=null,mode='';
-const TC={fromage:0xffd23f,sauce:0xff6b4a,slip:0x58d68d,nuage:0x7fd4ff,pote:0xffd76a};
+const TC={fromage:0xffd23f,sauce:0xff6b4a,slip:0x58d68d,nuage:0x7fd4ff,tele:0xb784f5,pote:0xffd76a};
 let ren,scene,cam,canvas,me='p',running=false,time=0,last=0,shake=0;
 let tiles={},units={},anims=[],tweens=[],parts=[],avatar=null,fan=[],table=null;
 const base={p:new T3.Vector3(0,7.7,8.5),l:new T3.Vector3(0,.7,-.4)},goal={p:base.p.clone(),l:base.l.clone()},look=new T3.Vector3(0,0,0);

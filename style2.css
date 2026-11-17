@@ -460,3 +460,7 @@ input{background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius
 .ach.got{background:var(--yellow)}
 #rematch{font-family:"Lilita One";font-size:22px;padding:10px 26px;border:4px solid var(--ink);border-radius:14px;background:var(--green);color:var(--ink);cursor:pointer;box-shadow:0 6px 0 var(--ink);margin-right:12px}
 #rematch.hide{display:none}#rematch:disabled{opacity:.6;cursor:default}
+
+/* 5e terrain : Plateau Télé */
+.t-tele{background:#b784f5}
+.t-tele .art{background:radial-gradient(circle at 80% 22%,#fff6c9 0 8%,transparent 9%),repeating-linear-gradient(90deg,#d9c2ff 0 12px,#c9a8ff 12px 24px)}

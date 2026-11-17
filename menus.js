@@ -125,8 +125,8 @@ async function openPack(p,got){
 
 /* ---------- decks : par défaut, des decks tout faits ; « Modifier carte par carte » ouvre l'éditeur ---------- */
 const sorted=ids=>ids.slice().sort((a,b)=>C[a].c-C[b].c||C[a].n.localeCompare(C[b].n));
-const TCOL={fromage:'#ffd23f',sauce:'#e8443a',slip:'#58c48a',nuage:'#7fd4ff',pote:'#c77dff'};
-const FILTERS=[['all','Tout',()=>true],['fromage','Fromage',id=>C[id].t==='fromage'&&C[id].k==='c'],['sauce','Sauce',id=>C[id].t==='sauce'&&C[id].k==='c'],['slip','Slip',id=>C[id].t==='slip'&&C[id].k==='c'],['nuage','Nuage',id=>C[id].t==='nuage'&&C[id].k==='c'],['pote','Potes',id=>C[id].t==='pote'&&C[id].k==='c'],['spell','Sorts',id=>C[id].k==='s'],['build','Bâtiments',id=>C[id].k==='b']];
+const TCOL={fromage:'#ffd23f',sauce:'#e8443a',slip:'#58c48a',nuage:'#7fd4ff',tele:'#b784f5',pote:'#c77dff'};
+const FILTERS=[['all','Tout',()=>true],['fromage','Fromage',id=>C[id].t==='fromage'&&C[id].k==='c'],['sauce','Sauce',id=>C[id].t==='sauce'&&C[id].k==='c'],['slip','Slip',id=>C[id].t==='slip'&&C[id].k==='c'],['nuage','Nuage',id=>C[id].t==='nuage'&&C[id].k==='c'],['tele','Télé',id=>C[id].t==='tele'&&C[id].k==='c'],['pote','Potes',id=>C[id].t==='pote'&&C[id].k==='c'],['spell','Sorts',id=>C[id].k==='s'],['build','Bâtiments',id=>C[id].k==='b']];
 /* les decks tout faits : o = réglages donnés à S.autoDeck */
 const PRE={best:{n:'Le meilleur',x:'Tes cartes les plus fortes. Le bon choix si tu hésites.',c:'#fff6e0',o:{}},
   rush:{n:'Rapide',x:'Des cartes pas chères pour taper dès le début.',c:'#ff9f1c',o:{style:'rush'}},
@@ -134,7 +134,8 @@ const PRE={best:{n:'Le meilleur',x:'Tes cartes les plus fortes. Le bon choix si 
   fromage:{n:'Fromage',x:'Ça soigne et ça encaisse.',c:TCOL.fromage,o:{t:'fromage'}},
   sauce:{n:'Sauce',x:'Ça pique et ça explose.',c:TCOL.sauce,o:{t:'sauce'}},
   slip:{n:'Slip',x:'Poison, épines et coups tordus.',c:TCOL.slip,o:{t:'slip'}},
-  nuage:{n:'Nuage',x:'Ça vole par-dessus les défenses.',c:TCOL.nuage,o:{t:'nuage'}}};
+  nuage:{n:'Nuage',x:'Ça vole par-dessus les défenses.',c:TCOL.nuage,o:{t:'nuage'}},
+  tele:{n:'Télé',x:'Les héros du samedi matin, plus forts en duo.',c:TCOL.tele,o:{t:'tele'}}};
 let FIL='all',SHOWALL=false,EDIT=false;
 const RW={L:4,E:3,R:2,C:1};
 function drawColl(){

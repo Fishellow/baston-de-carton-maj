@@ -44,6 +44,7 @@ async function hurt(s,l,n,o){const c=G[s].lanes[l];if(!c||G.over)return;const d=
     if(d.revive&&!c.revived){c.revived=true;c.hp=1;c.poison=0;float(slot(s,l),'Revient !','g');SND.play('spawn');log(d.n+' se relève',s)}
     else{G[s].lanes[l]=null;log(d.n+' est K.O.',s,'ko');SND.play('death');ev(opp(s),'ko',1);render();if(d.death)await d.death(s,l)}}
   else if(d.rage){c.atk++;float(slot(s,l),'Rage +1','g')}
+  if(d.family&&G[s].lanes[l]===c&&!G.over){float(slot(s,l),'Toute la famille !','');await hurtH(opp(s),1)}
   render()}
 async function hurtH(s,n){if(G.over)return;G[s].hp-=n;G[s].rage=Math.min(RAGE_MAX,G[s].rage+n);float($('#hero-'+s),'-'+n,'r');SND.play('heroHit');ev(opp(s),'heroDmg',n);
   V.heroHit(s);render();await sleep(260);
@@ -58,7 +59,7 @@ async function hurtB(s,l,n){const b=G[s].bld[l];if(!b||G.over)return;const d=C[b
   render()}
 /* attaque : +1 sur son terrain, bonus du bâtiment, +2 pour deux potes côte à côte */
 const duo=(s,l)=>{const c=G[s].lanes[l];return c&&C[c.id].t==='pote'&&[l-1,l+1].some(x=>{const n=G[s].lanes[x];return n&&C[n.id].t==='pote'})};
-const atkOf=(s,l)=>{const c=G[s].lanes[l],b=bld(s,l);return c.atk+(C[c.id].t===G[s].terr[l]?1:0)+(b&&b.atk||0)+(duo(s,l)?2:0)};
+const atkOf=(s,l)=>{const c=G[s].lanes[l],b=bld(s,l);return c.atk+(C[c.id].t===G[s].terr[l]?1:0)+(b&&b.atk||0)+(duo(s,l)?2:0)+(C[c.id].buddy&&[l-1,l+1].some(x=>{const n=G[s].lanes[x];return n&&n.id===C[c.id].buddy})?2:0)+(C[c.id].brave&&G[s].hp<=10?4:0)};
 
 /* ---------- pouvoir de héros, rage, choix de début de tour ---------- */
 function canPower(s){const P=G[s];if(P.powUsed||P.energy<POW_COST||G.phase!=='main')return false;return powerOf(G.faces[s])!=='shield'||P.lanes.some(c=>c&&!c.shield)}
@@ -140,7 +141,7 @@ function newGame(o){
   /* les sièges : 1 par côté en duel, 2 en 2 contre 2. g = numéro du joueur à la table (0 à 3), ai = joué par le robot */
   const defs=o.seats||{p:[{deck:o.decks.p,name:o.names.p,face:o.faces.p,title:o.titles&&o.titles.p,look:o.looks&&o.looks.p,sh:o.shiny&&o.shiny.p,g:0}],e:[{deck:o.decks.e,name:o.names.e,face:o.faces.e,title:o.titles&&o.titles.e,look:o.looks&&o.looks.e,sh:o.shiny&&o.shiny.e,g:1,ai:o.mode==='solo'}]};
   MYG=defs[ME][MYSEAT].g|0;
-  const terrs=()=>{if(o.auto)return['fromage','sauce','slip','nuage'];const t=shuffle(['fromage','sauce','slip','nuage'],R);return NL>4?shuffle(t.concat(shuffle(['fromage','sauce','slip','nuage'],R).slice(0,NL-4)),R):t};
+  const terrs=()=>{if(o.auto)return['fromage','sauce','slip','nuage'];const ALL=['fromage','sauce','slip','nuage','tele'],t=shuffle(ALL.slice(),R);return NL>4?shuffle(t.concat(shuffle(ALL.slice(),R).slice(0,NL-5)),R):t.slice(0,4)};
   const mk=(ds,hp)=>{const P={hp,maxHp:hp,rage:0,cur:0,started:false,lanes:Array(NL).fill(null),bld:Array(NL).fill(null),trap:Array(NL).fill(null),terr:terrs(),
       seats:ds.map(d=>({name:d.name,face:d.face,look:d.look||null,sh:d.sh||[],title:d.title||'',ai:!!d.ai,g:d.g|0,energy:0,maxE:1,powUsed:false,deck:shuffle(d.deck.slice(),R),hand:[]}))};
     for(const k of['energy','maxE','powUsed','deck','hand'])Object.defineProperty(P,k,{get(){return this.seats[this.cur][k]},set(v){this.seats[this.cur][k]=v}});return P};
@@ -179,6 +180,8 @@ async function startTurn(s){
   if(G.over)return;
   /* bâtiments : effets de début de tour */
   for(let l=0;l<NL;l++){const b=bld(s,l);if(!b)continue;if(b.startNrj){P.energy+=b.startNrj;float(slot(s,l),'+'+b.startNrj+' énergie','g')}if(b.startDraw){await draw(s,b.startDraw);float(slot(s,l),'+1 carte','g')}if(b.startHeal)healH(s,b.startHeal)}
+  /* le Gamin à la Montre change de forme (même tirage chez tout le monde) */
+  for(let l=0;l<NL;l++){const c=G[s].lanes[l];if(!c||!C[c.id].morph)continue;const r=G.R()*3|0;if(r===0){c.atk++;float(slot(s,l),'Forme costaude : +1 attaque','g')}else if(r===1){c.hp++;c.max++;float(slot(s,l),'Forme solide : +1 vie','g')}else{c.shield++;float(slot(s,l),'Forme blindée : Bouclier','g')}SND.play('buff');render();await sleep(450)}
   /* le poison ronge les créatures du joueur dont c'est le tour */
   for(let l=0;l<NL&&!G.over;l++){const c=G[s].lanes[l];if(c&&c.poison){SND.play('poison');await hurt(s,l,c.poison,{through:1})}}
   if(G.over)return;
@@ -237,6 +240,7 @@ async function endTurn(s){
         if(d.perce&&!sh&&a>before)await hurtH(o,a-before)}
       /* pas de créature en face mais un bâtiment : c'est lui qui prend */
       else await hurtB(o,l,a*(d.bldx2?2:1));
+      if(d.wide)for(const x of[l-1,l+1])if(x>=0&&x<NL&&G[o].lanes[x]&&!G.over){float(slot(s,l),'Boing','');await hurt(o,x,1)}
       if(d.vamp&&!G.over)healH(s,1);
       await sleep(330);
     }

@@ -13,7 +13,7 @@ const CPOW = {
   thorns: { n: 'Épines', x: 'Épines : la créature qui la tape prend 1 dégât.', o: { thorns: 1 }, k: .8 },
   vamp: { n: 'Vampire', x: 'Vampire : soigne ton héros de 1 quand elle attaque.', o: { vamp: 1 }, k: .8 },
 };
-const CTERR = ['fromage', 'sauce', 'slip', 'nuage'];
+const CTERR = ['fromage', 'sauce', 'slip', 'nuage', 'tele'];
 /* vérifie et nettoie une carte inventée (la mienne ou celle reçue d'un pote) */
 function customDef(x) {
   if (!x || typeof x !== 'object') return null;
