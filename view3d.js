@@ -277,4 +277,6 @@ Object.assign(api,{
 });
 return api})();
 /* illustrations des cartes : une image de chaque modèle 3D */
+/* portrait shiny d'une carte : photographié à la demande avec la texture aux couleurs décalées */
+window.PORTSH={};window.shPort=id=>{if(PORTSH[id]!==undefined)return PORTSH[id];const d=C[id],mid=d.k==='s'?'sp_'+id:id;try{PORTSH[id]=window.BB&&BB[mid]?M.snap(mid,256,true):''}catch(e){PORTSH[id]=''}return PORTSH[id]};
 window.PORT={};M.ready.then(()=>{for(const id of Object.keys(C)){const d=C[id],mid=d.k==='s'?'sp_'+id:id;if(!(window.BB&&BB[mid])&&(d.img||d.k==='s'))continue;try{PORT[id]=M.snap(mid)}catch(e){console.error(id,e)}}document.dispatchEvent(new Event('ports'))});

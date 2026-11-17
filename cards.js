@@ -122,7 +122,7 @@ const STARTER=['poulet','poulet','souris','souris','raclette','raclette','piment
 function cardHTML(id,inst,mini,cls=''){const d=C[id];
   /* versions alternatives que je possède : shiny (autres couleurs) et plein cadre (le personnage prend toute la carte) */
   const own=typeof S!=='undefined'&&S.d,shiny=own&&S.d.sh&&S.d.sh[id],full=own&&S.d.fa&&S.d.fa[id]&&window.PORT&&PORT[id];if(shiny)cls+=' alt-shiny';if(full)cls+=' alt-full';
-  let art;const P=window.PORT&&PORT[id];if(P)art=`<img class="port" src="${P}" alt="">`;else if(d.img)art=`<img src="${d.img}" alt="">`;else art='';
+  let art,P=window.PORT&&PORT[id];if(P&&shiny&&window.shPort){const q=shPort(id);if(q)P=q}if(P)art=`<img class="port" src="${P}" alt="">`;else if(d.img)art=`<img src="${d.img}" alt="">`;else art='';
   let st='';
   if(d.k==='b')st=`<div class="st h">${inst&&inst.bhp!=null?inst.bhp:d.bh}</div>`;
   if(d.k==='c'){const a=inst?inst.shownAtk:d.a,h=inst?inst.hp:d.h;

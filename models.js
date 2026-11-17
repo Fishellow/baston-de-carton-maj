@@ -115,8 +115,8 @@ return{build(id,tint,sh){SHN=!!sh;const g=new T3.Group();U={uTint:{value:new T3.
   if(b.star)b.star.rotation.y=t*2.5;
   if(b.flame)b.flame.scale.set(1+S(t*23)*.08,1+S(t*31)*.2+a*.9,1+S(t*27)*.08)},
  /* dessine le modèle en vraies couleurs dans une image (pour l'illustration des cartes) */
- snap(id,size){if(!snapR){snapR=new T3.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});snapR.outputColorSpace=T3.LinearSRGBColorSpace}snapR.setSize(size||256,size||256,false);
-  const m=this.build(id,0xffffff);m.U.uHolo.value=0;m.U.uReveal.value=99;m.U.uOut.value=.034;m.g.rotation.y=-.5;
+ snap(id,size,sh){if(!snapR){snapR=new T3.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});snapR.outputColorSpace=T3.LinearSRGBColorSpace}snapR.setSize(size||256,size||256,false);
+  const m=this.build(id,0xffffff,sh);m.U.uHolo.value=0;m.U.uReveal.value=99;m.U.uOut.value=.034;m.g.rotation.y=-.5;
   const sc=new T3.Scene();sc.add(m.g);m.g.updateMatrixWorld(true);const bb=new T3.Box3().setFromObject(m.g),c=bb.getCenter(new T3.Vector3()),r=Math.max(bb.max.x-bb.min.x,bb.max.y-bb.min.y,bb.max.z-bb.min.z)*.6;
   const cam=new T3.OrthographicCamera(-r,r,r,-r,.1,50);cam.position.set(c.x,c.y+r*.55,c.z+8);cam.lookAt(c);snapR.render(sc,cam);const url=snapR.domElement.toDataURL();
   m.g.traverse(o=>{if(o.material)o.material.dispose()});return url}};
