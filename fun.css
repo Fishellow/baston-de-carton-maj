@@ -1,0 +1,34 @@
+/* fun.css : Expédition, Baston Folle, coffres */
+.mode[data-fun="expe"]{--mc:#c98a4b}.mode[data-fun="folle"]{--mc:#ff5fb0}
+.modes .mode:nth-child(8){animation-delay:.28s}.modes .mode:nth-child(9){animation-delay:.32s}
+
+#expe{position:fixed;inset:0;z-index:235;display:grid;place-items:center;background:rgba(26,18,48,.78)}#expe.hide{display:none}
+.exbox{width:min(760px,94vw);padding:20px 26px 24px;display:flex;flex-direction:column;gap:14px;background:repeating-linear-gradient(90deg,#fff6e0 0 26px,#fbefd2 26px 52px);animation:popin .3s both}
+#expeBody{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+#expeBody p{margin:0;font-size:17px;line-height:1.4;text-wrap:balance}
+.expath{display:flex;align-items:center;gap:0}
+.expath i{font-style:normal;font-family:"Lilita One";font-size:17px;font-variant-numeric:tabular-nums;min-width:40px;height:40px;padding:0 8px;box-sizing:border-box;display:grid;place-items:center;border:3px solid var(--ink);border-radius:50%;background:#fff;position:relative}
+.expath i+i{margin-left:26px}
+.expath i+i::before{content:"";position:absolute;right:100%;top:50%;width:26px;border-top:3px dashed var(--ink);margin-right:3px}
+.expath i.done{background:var(--green)}.expath i.cur{background:var(--yellow);transform:scale(1.18);box-shadow:0 4px 0 var(--ink)}
+.expath i.boss{border-radius:12px;background:#fff}.expath i.boss.cur{background:var(--red);color:#fff}.expath i.boss.done{background:var(--green)}
+.exstat{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center}
+.exstat b{font-family:"Lilita One";font-weight:400;font-size:22px;display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}.exstat b .ic{width:24px;height:24px;color:var(--red)}
+.exrels{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.exrel{font-family:"Lilita One";font-size:13px;padding:3px 10px;border:3px solid var(--ink);border-radius:9px;background:var(--yellow)}
+.extre{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%}
+.extr{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 12px;font-size:19px;background:#fff}
+.extr .ic{width:44px;height:44px;color:#c98a4b}.extr b{font-weight:400}.extr small{font-family:Fredoka,sans-serif;font-size:13.5px;line-height:1.3;opacity:.85}
+.exbtns{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center}
+
+/* coffres de victoire, sur l'écran de fin */
+.chests{margin-top:14px}.chq{font-family:"Lilita One";font-size:18px}
+.chrow{display:flex;justify-content:center;gap:12px;margin-top:8px}
+.screen .chest{margin:0;padding:10px 8px;width:132px;min-height:112px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:14px;line-height:1.2;background:#e3c594;border-radius:14px;box-shadow:0 5px 0 var(--ink);transition:transform .14s cubic-bezier(.3,1.5,.5,1)}
+.screen .chest .ic{width:56px;height:56px}
+.screen .chest:not(:disabled):hover{transform:translateY(-5px) rotate(-2deg)}
+.screen .chest:not(:disabled):active{transform:scale(.96)}
+.screen .chest:disabled{cursor:default}
+.screen .chest.mine{background:var(--yellow);animation:popin .3s both}
+.screen .chest.other{opacity:.55;box-shadow:0 2px 0 var(--ink);transform:translateY(3px)}
+@media (prefers-reduced-motion: reduce){.exbox,.screen .chest.mine{animation:none}}
